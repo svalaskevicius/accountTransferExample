@@ -60,4 +60,9 @@ class AccountSpec extends FlatSpec with Matchers {
     val transactionId = UUID.randomUUID()
     new RegisteredAccount("id", 999).creditForTransfer(transactionId, PositiveNumber(1000).get) should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
   }
+
+  it should "fail to complete transaction for unknown transaction id" in {
+    val transactionId = UUID.randomUUID()
+    new RegisteredAccount("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+  }
 }

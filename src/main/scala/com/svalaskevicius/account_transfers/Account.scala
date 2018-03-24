@@ -96,6 +96,8 @@ final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
   override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] =
     Right(List(Credited(transactionId, amount)))
 
-  override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
+  override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
+    Left(CompleteTransferError.InvalidTransactionId)
+
   override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
 }
