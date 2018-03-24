@@ -11,7 +11,7 @@ class InMemoryEventStorage[Aggregate, Snapshot, Event] (val aggregateLoader: Agg
     * @param aggregateId
     * @return
     */
-  def readAggregate[A](aggregateId: String): Aggregate = ???
+  def readAggregate[A](aggregateId: String): Aggregate = aggregateLoader.empty
 
   /**
     * Run a transaction for a given aggregate, store the changes, and return their result
