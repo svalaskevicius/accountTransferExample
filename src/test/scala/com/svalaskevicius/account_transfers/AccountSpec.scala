@@ -2,7 +2,7 @@ package com.svalaskevicius.account_transfers
 
 import java.util.UUID
 
-import com.svalaskevicius.account_transfers.AccountEvent.Registered
+import com.svalaskevicius.account_transfers.AccountEvent.{Debited, Registered, TransferStarted}
 import org.scalatest.{FlatSpec, Matchers}
 
 class AccountSpec extends FlatSpec with Matchers {
@@ -36,5 +36,19 @@ class AccountSpec extends FlatSpec with Matchers {
 
   it should "return current account balance" in {
     new RegisteredAccount("id", 999).currentBalance should be(Right(999))
+  }
+
+  it should "allow debit operation" in {
+    val result = new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(500).get)
+    result.isRight should be(true)
+    val events = result.getOrElse(List.empty)
+    events should matchPattern {
+      case TransferStarted(transactionId1, accountTo, amount1) ::
+        Debited(transactionId2, amount2) ::
+        Nil if transactionId1 == transactionId2 &&
+        accountTo == "accTo" &&
+        amount1.value == 500 &&
+        amount2.value == 500 =>
+    }
   }
 }

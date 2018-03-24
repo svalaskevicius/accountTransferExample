@@ -79,7 +79,8 @@ object UnregisteredAccount extends Account {
 }
 
 final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
-  override def currentBalance: AccountReadError Either Long = ???
+  override def currentBalance: AccountReadError Either Long =
+    Right(balance)
 
   override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
     Left(RegisterError.AccountHasAlreadyBeenRegistered)
