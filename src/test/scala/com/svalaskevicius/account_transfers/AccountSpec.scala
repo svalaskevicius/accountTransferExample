@@ -107,6 +107,30 @@ class AccountSpec extends FlatSpec with Matchers {
     account3.revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
+  it should "throw when receiving registered event for a registered account" in {
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(accountWithBalance("id", 0), Registered("id2"))
+    }
+  }
+
+  it should "throw when receiving any non registered event for an unregistered account" in {
+    val uuid = UUID.randomUUID()
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(UnregisteredAccount, TransferStarted(uuid, "to", PositiveNumber(1).get))
+    }
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(UnregisteredAccount, Debited(uuid, PositiveNumber(1).get))
+    }
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(UnregisteredAccount, Credited(uuid, PositiveNumber(1).get))
+    }
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(UnregisteredAccount, TransferCompleted(uuid, "to", PositiveNumber(1).get))
+    }
+    a [RuntimeException] should be thrownBy {
+      Account.applyEvent(UnregisteredAccount, TransferFailed(uuid, "to", PositiveNumber(1).get))
+    }
+  }
 
   private def accountWithBalance(id: AccountId, balance: Long): Account = RegisteredAccount(id, balance, List.empty)
 }

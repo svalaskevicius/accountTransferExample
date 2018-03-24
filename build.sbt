@@ -5,6 +5,7 @@ lazy val `account-transfers` =
     .settings(settings)
     .settings(
       libraryDependencies ++= Seq(
+       // "ch.qos.logback" % "logback-classic" % "1.2.3",
         "org.typelevel" %% "cats-core" % "1.1.0",
         "org.scalacheck" %% "scalacheck" % "1.13.4" % Test,
         "org.scalatest" %% "scalatest" % "3.0.5" % Test

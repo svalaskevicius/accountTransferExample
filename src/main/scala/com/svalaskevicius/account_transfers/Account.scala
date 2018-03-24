@@ -56,6 +56,8 @@ object Account {
       currentTransfers = acc.currentTransfers.filterNot(_.transactionId == tr.transactionId),
       balance = acc.balance + tr.amount.value
     )
+    case (acc: RegisteredAccount, Registered(_)) => throw new RuntimeException(s"Unexpected registration event for account ${acc.id}")
+    case (UnregisteredAccount, event) => throw new RuntimeException(s"Unexpected event ($event) for an unregistered account")
   }
 
   def applyEvents(account: Account, events: List[AccountEvent]): Account =
