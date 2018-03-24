@@ -31,6 +31,10 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   "A registered account" should "not be allowed to register again" in {
-    RegisteredAccount("id").register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+    new RegisteredAccount("id", 0).register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+  }
+
+  it should "return current account balance" in {
+    new RegisteredAccount("id", 999).currentBalance should be(Right(999))
   }
 }

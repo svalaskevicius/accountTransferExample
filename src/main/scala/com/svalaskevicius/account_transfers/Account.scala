@@ -58,7 +58,7 @@ sealed trait Account {
   def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
 }
 
-case object UnregisteredAccount extends Account {
+object UnregisteredAccount extends Account {
   override def currentBalance: AccountReadError Either Long =
     Left(AccountReadError.AccountHasNotBeenRegistered)
 
@@ -78,7 +78,7 @@ case object UnregisteredAccount extends Account {
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 }
 
-final case class RegisteredAccount(id: AccountId) extends Account {
+final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
   override def currentBalance: AccountReadError Either Long = ???
 
   override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
