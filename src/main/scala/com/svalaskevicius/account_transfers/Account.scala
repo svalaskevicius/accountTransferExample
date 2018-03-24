@@ -3,7 +3,7 @@ package com.svalaskevicius.account_transfers
 import java.util.UUID
 
 import com.svalaskevicius.account_transfers.Account.AccountId
-import com.svalaskevicius.account_transfers.AccountEvent.{Credited, Debited, Registered, TransferStarted}
+import com.svalaskevicius.account_transfers.AccountEvent._
 
 
 sealed trait AccountReadError
@@ -99,7 +99,10 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
     Right(List(Credited(transactionId, amount)))
 
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
-    Left(CompleteTransferError.InvalidTransactionId)
+    currentTransfers.find(_.transactionId == transactionId) match {
+      case Some(transfer) => Right(List(TransferCompleted(transactionId, transfer.accountTo, transfer.amount)))
+      case None => Left(CompleteTransferError.InvalidTransactionId)
+    }
 
   override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
 }
