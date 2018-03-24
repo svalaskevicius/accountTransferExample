@@ -61,8 +61,12 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "allow to be credited" in {
+    val account = accountWithBalance("id", 999)
     val transactionId = UUID.randomUUID()
-    accountWithBalance("id", 999).creditForTransfer(transactionId, PositiveNumber(1000).get) should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
+    val result = account.creditForTransfer(transactionId, PositiveNumber(1000).get)
+    result should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
+
+    Account.applyEvents(account, result.getOrElse(List.empty)).currentBalance should be(Right(1999))
   }
 
   it should "fail to complete transaction for unknown transaction id" in {
