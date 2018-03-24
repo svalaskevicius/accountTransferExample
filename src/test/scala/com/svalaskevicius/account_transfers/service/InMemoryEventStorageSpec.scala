@@ -16,6 +16,14 @@ class InMemoryEventStorageSpec extends FlatSpec with Matchers {
     storage.readAggregate("test") should be (List("new ev2, len: 2", "new ev1", "len: 0"))
   }
 
+  it should "keep existing aggregate info on error" in {
+    val storage = new InMemoryEventStorage(testAggregateLoader)
+    storage.runTransaction("test") { existing => Right(List("new ev1", s"len: ${existing.length}")) } should be (Right(()))
+    storage.runTransaction("test") { _ => Left("error") } should be (Left("error"))
+    storage.readAggregate("test") should be (List("new ev1", "len: 0"))
+
+  }
+
   private object testAggregateLoader extends AggregateLoader[List[String], List[String], String] {
     def empty = List.empty
     def takeSnapshot(aggregate: List[String]) = aggregate
