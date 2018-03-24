@@ -40,6 +40,7 @@ object AccountEvent {
   case class Debited(transactionId: UUID, amount: PositiveNumber) extends AccountEvent
   case class Credited(transactionId: UUID, amount: PositiveNumber) extends AccountEvent
   case class TransferCompleted(transactionId: UUID, accountTo: AccountId, amount: PositiveNumber) extends AccountEvent
+  case class TransferFailed(transactionId: UUID, accountTo: AccountId, amount: PositiveNumber) extends AccountEvent
 }
 
 object Account {
@@ -104,5 +105,10 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
       case None => Left(CompleteTransferError.InvalidTransactionId)
     }
 
-  override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
+  override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
+    currentTransfers.find(_.transactionId == transactionId) match {
+      case Some(transfer) => Right(List(TransferFailed(transactionId, transfer.accountTo, transfer.amount)))
+      case None => Left(CompleteTransferError.InvalidTransactionId)
+    }
+
 }
