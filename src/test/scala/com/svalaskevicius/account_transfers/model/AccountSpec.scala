@@ -8,9 +8,9 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class AccountSpec extends FlatSpec with Matchers {
   "An unregistered account" should "be allowed to register" in {
-    UnregisteredAccount.register("accountId") should be (Right(List(Registered("accountId"))))
-    Account.applyEvent(UnregisteredAccount, Registered("accountId")) should matchPattern {
-      case RegisteredAccount("accountId", 0, Nil) =>
+    UnregisteredAccount.register("accountId", 9) should be (Right(List(Registered("accountId", 9))))
+    Account.loader.applyEvent(UnregisteredAccount, Registered("accountId", 9)) should matchPattern {
+      case RegisteredAccount("accountId", 9, Nil) =>
     }
   }
 
@@ -35,7 +35,7 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   "A registered account" should "not be allowed to register again" in {
-    accountWithBalance("id", 0).register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+    accountWithBalance("id", 0).register("id2", 12) should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
   }
 
   it should "return current account balance" in {
@@ -56,7 +56,7 @@ class AccountSpec extends FlatSpec with Matchers {
         amount2.value == 999 =>
     }
 
-    Account.applyEvents(account, events).currentBalance should be(Right(0))
+    applyEvents(account, events).currentBalance should be(Right(0))
   }
 
   it should "fail to debit if insufficient funds" in {
@@ -69,7 +69,7 @@ class AccountSpec extends FlatSpec with Matchers {
     val result = account.creditForTransfer(transactionId, PositiveNumber(1000).get)
     result should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
 
-    Account.applyEvents(account, result.getOrElse(List.empty)).currentBalance should be(Right(1999))
+    applyEvents(account, result.getOrElse(List.empty)).currentBalance should be(Right(1999))
   }
 
   it should "fail to complete transaction for unknown transaction id" in {
@@ -80,11 +80,11 @@ class AccountSpec extends FlatSpec with Matchers {
   it should "allow to complete valid transaction once" in {
     val account1 = accountWithBalance("id", 999)
     val transactionId = UUID.randomUUID()
-    val account2 = Account.applyEvent(account1, TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
+    val account2 = Account.loader.applyEvent(account1, TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
     val result = account2.completeTransfer(transactionId)
     result should be(Right(List(TransferCompleted(transactionId, "accTo", PositiveNumber(999).get))))
 
-    Account.applyEvents(account2, result.getOrElse(List.empty)).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    applyEvents(account2, result.getOrElse(List.empty)).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
   it should "fail to revert failed transaction for unknown transaction id" in {
@@ -95,42 +95,46 @@ class AccountSpec extends FlatSpec with Matchers {
   it should "allow to revert failed valid transaction" in {
     val account1 = accountWithBalance("id", 999)
     val transactionId = UUID.randomUUID()
-    val account2 = Account.applyEvents(account1, List(
+    val account2 = applyEvents(account1, List(
       TransferStarted(transactionId, "accTo", PositiveNumber(999).get),
       Debited(transactionId, PositiveNumber(999).get)
     ))
     val result = account2.revertFailedTransfer(transactionId)
     result should be(Right(List(TransferFailed(transactionId, "accTo", PositiveNumber(999).get))))
 
-    val account3 = Account.applyEvents(account2, result.getOrElse(List.empty))
+    val account3 = applyEvents(account2, result.getOrElse(List.empty))
     account3.currentBalance should be(Right(999))
     account3.revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
   it should "throw when receiving registered event for a registered account" in {
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(accountWithBalance("id", 0), Registered("id2"))
+      Account.loader.applyEvent(accountWithBalance("id", 0), Registered("id2", 1))
     }
   }
 
   it should "throw when receiving any non registered event for an unregistered account" in {
     val uuid = UUID.randomUUID()
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(UnregisteredAccount, TransferStarted(uuid, "to", PositiveNumber(1).get))
+      Account.loader.applyEvent(UnregisteredAccount, TransferStarted(uuid, "to", PositiveNumber(1).get))
     }
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(UnregisteredAccount, Debited(uuid, PositiveNumber(1).get))
+      Account.loader.applyEvent(UnregisteredAccount, Debited(uuid, PositiveNumber(1).get))
     }
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(UnregisteredAccount, Credited(uuid, PositiveNumber(1).get))
+      Account.loader.applyEvent(UnregisteredAccount, Credited(uuid, PositiveNumber(1).get))
     }
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(UnregisteredAccount, TransferCompleted(uuid, "to", PositiveNumber(1).get))
+      Account.loader.applyEvent(UnregisteredAccount, TransferCompleted(uuid, "to", PositiveNumber(1).get))
     }
     a [RuntimeException] should be thrownBy {
-      Account.applyEvent(UnregisteredAccount, TransferFailed(uuid, "to", PositiveNumber(1).get))
+      Account.loader.applyEvent(UnregisteredAccount, TransferFailed(uuid, "to", PositiveNumber(1).get))
     }
   }
 
   private def accountWithBalance(id: AccountId, balance: Long): Account = RegisteredAccount(id, balance, List.empty)
+
+  private def applyEvents(account: Account, events: List[AccountEvent]): Account =
+    events.foldLeft(account)(Account.loader.applyEvent)
+
 }
