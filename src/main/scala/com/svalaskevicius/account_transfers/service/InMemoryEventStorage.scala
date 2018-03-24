@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import cats.Id
 import com.svalaskevicius.account_transfers.model.{AggregateLoader, EventStorage}
 
-class InMemoryEventStorage[Aggregate, Snapshot, Event] (val aggregateLoader: AggregateLoader[Aggregate, Snapshot, Event]) extends EventStorage[Id, Aggregate, Snapshot, Event] {
+class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoader[Aggregate, Event]) extends EventStorage[Id, Aggregate, Event] {
 
   private val storage = new ConcurrentHashMap[String, List[Event]]()
 

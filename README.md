@@ -10,7 +10,10 @@
 
 ### Why the 3rd step to complete transaction?
 
-### Choice of concurrency control
+## Further improvements
+
+### snapshots
+### optimistic concurrency control
 
 ## License ##
 

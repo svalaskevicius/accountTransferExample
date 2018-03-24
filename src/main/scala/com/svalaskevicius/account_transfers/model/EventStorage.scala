@@ -1,15 +1,13 @@
 package com.svalaskevicius.account_transfers.model
 
-trait AggregateLoader[Aggregate, Snapshot, Event] {
+trait AggregateLoader[Aggregate, Event] {
   def empty: Aggregate
-  def takeSnapshot(aggregate: Aggregate): Snapshot
-  def fromSnapshot(snapshot: Snapshot): Aggregate
   def applyEvent(aggregate: Aggregate, event: Event): Aggregate
 }
 
-trait EventStorage[F[_], Aggregate, Snapshot, Event] {
+trait EventStorage[F[_], Aggregate, Event] {
 
-  def aggregateLoader: AggregateLoader[Aggregate, Snapshot, Event]
+  def aggregateLoader: AggregateLoader[Aggregate, Event]
 
   /**
     * Read aggregate
