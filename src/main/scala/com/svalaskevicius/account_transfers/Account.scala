@@ -48,6 +48,7 @@ object Account {
 
   def applyEvent(account: Account, event: AccountEvent): Account = (account, event) match {
     case (acc: RegisteredAccount, tr: TransferStarted) => acc.copy(currentTransfers = tr :: acc.currentTransfers)
+    case (acc: RegisteredAccount, Debited(_, amount)) => acc.copy(balance = acc.balance - amount.value)
   }
 }
 
@@ -80,6 +81,7 @@ case object UnregisteredAccount extends Account {
   override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 }
+
 
 final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfers: List[TransferStarted]) extends Account {
   override def currentBalance: AccountReadError Either Long =

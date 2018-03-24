@@ -40,7 +40,8 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "allow debit operation" in {
-    val result = accountWithBalance("id", 999).debitForTransfer("accTo", PositiveNumber(999).get)
+    val account = accountWithBalance("id", 999)
+    val result = account.debitForTransfer("accTo", PositiveNumber(999).get)
     result.isRight should be(true)
     val events = result.getOrElse(List.empty)
     events should matchPattern {
@@ -51,6 +52,8 @@ class AccountSpec extends FlatSpec with Matchers {
         amount1.value == 999 &&
         amount2.value == 999 =>
     }
+
+    events.foldLeft(account)(Account.applyEvent).currentBalance should be(Right(0))
   }
 
   it should "fail to debit if insufficient funds" in {
@@ -85,5 +88,5 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
 
-  private def accountWithBalance(id: AccountId, balance: Long) = RegisteredAccount(id, balance, List.empty)
+  private def accountWithBalance(id: AccountId, balance: Long): Account = RegisteredAccount(id, balance, List.empty)
 }
