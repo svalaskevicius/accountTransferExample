@@ -15,7 +15,7 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @param aggregateId
     * @return
     */
-  def readAggregate[A](aggregateId: String): Aggregate = aggregateFromStoredInfo(storage.get(aggregateId))
+  def readAggregate(aggregateId: String): Aggregate = aggregateFromStoredInfo(storage.get(aggregateId))
 
   /**
     * Run a transaction for a given aggregate, store the changes, and return their result
@@ -25,14 +25,15 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @tparam Err
     * @return
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Err Either Unit = {
-    var returnValue: Either[Err, Unit] = Right(())
+  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Err Either List[Event] = {
+    var returnValue: Either[Err, List[Event]] = Right(List.empty)
     storage.compute(aggregateId, (_, currentEventsOrNull) => {
       f(aggregateFromStoredInfo(currentEventsOrNull)) match {
         case Left(error) =>
           returnValue = Left(error)
           currentEventsOrNull
         case Right(newEvents) =>
+          returnValue = Right(newEvents)
           val currentEvents = Option(currentEventsOrNull).getOrElse(List.empty)
           newEvents ++ currentEvents
       }

@@ -15,7 +15,7 @@ trait EventStorage[F[_], Aggregate, Event] {
     * @param aggregateId
     * @return
     */
-  def readAggregate[A](aggregateId: String): F[Aggregate]
+  def readAggregate(aggregateId: String): F[Aggregate]
 
   /**
     * Run a transaction for a given aggregate, store the changes, and return their result
@@ -25,5 +25,5 @@ trait EventStorage[F[_], Aggregate, Event] {
     * @tparam Err
     * @return
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either Unit]
+  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either List[Event]]
 }
