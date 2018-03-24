@@ -3,7 +3,7 @@ package com.svalaskevicius.account_transfers
 import java.util.UUID
 
 import com.svalaskevicius.account_transfers.Account.AccountId
-import com.svalaskevicius.account_transfers.AccountEvent.Registered
+import com.svalaskevicius.account_transfers.AccountEvent.{Debited, Registered, TransferStarted}
 
 
 sealed trait AccountReadError
@@ -85,7 +85,11 @@ final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
   override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
     Left(RegisterError.AccountHasAlreadyBeenRegistered)
 
-  override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] = ???
+  override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] = {
+    val newTransactionId = UUID.randomUUID()
+    Right(List(TransferStarted(newTransactionId, accountTo, amount), Debited(newTransactionId, amount)))
+  }
+
   override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] = ???
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
   override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
