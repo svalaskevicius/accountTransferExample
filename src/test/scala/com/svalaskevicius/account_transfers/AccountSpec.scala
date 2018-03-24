@@ -92,11 +92,16 @@ class AccountSpec extends FlatSpec with Matchers {
   it should "allow to revert failed valid transaction" in {
     val account1 = accountWithBalance("id", 999)
     val transactionId = UUID.randomUUID()
-    val account2 = Account.applyEvent(account1, TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
+    val account2 = Account.applyEvents(account1, List(
+      TransferStarted(transactionId, "accTo", PositiveNumber(999).get),
+      Debited(transactionId, PositiveNumber(999).get)
+    ))
     val result = account2.revertFailedTransfer(transactionId)
     result should be(Right(List(TransferFailed(transactionId, "accTo", PositiveNumber(999).get))))
 
-    Account.applyEvents(account2, result.getOrElse(List.empty)).revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    val account3 = Account.applyEvents(account2, result.getOrElse(List.empty))
+    account3.currentBalance should be(Right(999))
+    account3.revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
 
