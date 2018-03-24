@@ -85,10 +85,13 @@ final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
   override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
     Left(RegisterError.AccountHasAlreadyBeenRegistered)
 
-  override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] = {
-    val newTransactionId = UUID.randomUUID()
-    Right(List(TransferStarted(newTransactionId, accountTo, amount), Debited(newTransactionId, amount)))
-  }
+  override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] =
+    if (amount.value > balance) {
+      Left(DebitError.InsufficientFunds)
+    } else {
+      val newTransactionId = UUID.randomUUID()
+      Right(List(TransferStarted(newTransactionId, accountTo, amount), Debited(newTransactionId, amount)))
+    }
 
   override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] = ???
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???

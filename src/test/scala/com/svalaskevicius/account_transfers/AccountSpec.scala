@@ -39,7 +39,7 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "allow debit operation" in {
-    val result = new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(500).get)
+    val result = new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(999).get)
     result.isRight should be(true)
     val events = result.getOrElse(List.empty)
     events should matchPattern {
@@ -47,8 +47,12 @@ class AccountSpec extends FlatSpec with Matchers {
         Debited(transactionId2, amount2) ::
         Nil if transactionId1 == transactionId2 &&
         accountTo == "accTo" &&
-        amount1.value == 500 &&
-        amount2.value == 500 =>
+        amount1.value == 999 &&
+        amount2.value == 999 =>
     }
+  }
+
+  it should "fail to debit if insufficient funds" in {
+    new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds))
   }
 }
