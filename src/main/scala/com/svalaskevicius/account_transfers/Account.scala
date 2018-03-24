@@ -51,7 +51,10 @@ object Account {
     case (acc: RegisteredAccount, Debited(_, amount)) => acc.copy(balance = acc.balance - amount.value)
     case (acc: RegisteredAccount, Credited(_, amount)) => acc.copy(balance = acc.balance + amount.value)
     case (acc: RegisteredAccount, tr: TransferCompleted) => acc.copy(currentTransfers = acc.currentTransfers.filterNot(_.transactionId == tr.transactionId))
-    case (acc: RegisteredAccount, tr: TransferFailed) => acc.copy(currentTransfers = acc.currentTransfers.filterNot(_.transactionId == tr.transactionId))
+    case (acc: RegisteredAccount, tr: TransferFailed) => acc.copy(
+      currentTransfers = acc.currentTransfers.filterNot(_.transactionId == tr.transactionId),
+      balance = acc.balance + tr.amount.value
+    )
   }
 
   def applyEvents(account: Account, events: List[AccountEvent]): Account =
