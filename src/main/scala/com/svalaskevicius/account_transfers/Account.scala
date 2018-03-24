@@ -44,8 +44,10 @@ object AccountEvent {
 
 object Account {
   type AccountId = String
-  type Snapshot
 
+  def applyEvent(account: Account, event: AccountEvent): Account = (account, event) match {
+    case (acc: RegisteredAccount, tr: TransferStarted) => acc.copy(currentTransfers = tr :: acc.currentTransfers)
+  }
 }
 
 sealed trait Account {
@@ -58,7 +60,7 @@ sealed trait Account {
   def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
 }
 
-object UnregisteredAccount extends Account {
+case object UnregisteredAccount extends Account {
   override def currentBalance: AccountReadError Either Long =
     Left(AccountReadError.AccountHasNotBeenRegistered)
 
@@ -78,7 +80,7 @@ object UnregisteredAccount extends Account {
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 }
 
-final class RegisteredAccount(id: AccountId, balance: Long) extends Account {
+final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfers: List[TransferStarted]) extends Account {
   override def currentBalance: AccountReadError Either Long =
     Right(balance)
 

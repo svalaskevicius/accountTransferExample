@@ -2,7 +2,8 @@ package com.svalaskevicius.account_transfers
 
 import java.util.UUID
 
-import com.svalaskevicius.account_transfers.AccountEvent.{Credited, Debited, Registered, TransferStarted}
+import com.svalaskevicius.account_transfers.Account.AccountId
+import com.svalaskevicius.account_transfers.AccountEvent._
 import org.scalatest.{FlatSpec, Matchers}
 
 class AccountSpec extends FlatSpec with Matchers {
@@ -31,15 +32,15 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   "A registered account" should "not be allowed to register again" in {
-    new RegisteredAccount("id", 0).register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+    accountWithBalance("id", 0).register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
   }
 
   it should "return current account balance" in {
-    new RegisteredAccount("id", 999).currentBalance should be(Right(999))
+    accountWithBalance("id", 999).currentBalance should be(Right(999))
   }
 
   it should "allow debit operation" in {
-    val result = new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(999).get)
+    val result = accountWithBalance("id", 999).debitForTransfer("accTo", PositiveNumber(999).get)
     result.isRight should be(true)
     val events = result.getOrElse(List.empty)
     events should matchPattern {
@@ -53,16 +54,24 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "fail to debit if insufficient funds" in {
-    new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds))
+    accountWithBalance("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds))
   }
 
   it should "allow to be credited" in {
     val transactionId = UUID.randomUUID()
-    new RegisteredAccount("id", 999).creditForTransfer(transactionId, PositiveNumber(1000).get) should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
+    accountWithBalance("id", 999).creditForTransfer(transactionId, PositiveNumber(1000).get) should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
   }
 
   it should "fail to complete transaction for unknown transaction id" in {
     val transactionId = UUID.randomUUID()
-    new RegisteredAccount("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    accountWithBalance("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
+
+  it should "allow to complete valid transaction" in {
+    val transactionId = UUID.randomUUID()
+    val account = Account.applyEvent(accountWithBalance("id", 999), TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
+    account.completeTransfer(transactionId) should be(Right(List(TransferCompleted(transactionId, "accTo", PositiveNumber(999).get))))
+  }
+
+  private def accountWithBalance(id: AccountId, balance: Long) = RegisteredAccount(id, balance, List.empty)
 }
