@@ -88,7 +88,7 @@ package object whiteboard {
       * @tparam Err
       * @return
       */
-    def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either List[Event]]
+    def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either Unit]
   }
 
 
@@ -97,19 +97,19 @@ package object whiteboard {
     def currentBalance(accountId: AccountId): F[AccountReadError Either Long] =
       storage.readAggregate(accountId).map(_.currentBalance)
 
-    def register(accountId: AccountId): F[RegisterError Either List[AccountEvent]] =
+    def register(accountId: AccountId): F[RegisterError Either Unit] =
       storage.runTransaction(accountId)(_.register(accountId))
 
-    def debitForTransfer(accountId: AccountId, accountTo: AccountId, amount: PositiveNumber): F[DebitError Either List[AccountEvent]] =
+    def debitForTransfer(accountId: AccountId, accountTo: AccountId, amount: PositiveNumber): F[DebitError Either Unit] =
       storage.runTransaction(accountId)(_.debitForTransfer(accountTo: AccountId, amount))
 
-    def creditForTransfer(accountId: AccountId, transactionId: UUID, amount: PositiveNumber): F[CreditError Either List[AccountEvent]] =
+    def creditForTransfer(accountId: AccountId, transactionId: UUID, amount: PositiveNumber): F[CreditError Either Unit] =
       storage.runTransaction(accountId)(_.creditForTransfer(transactionId, amount))
 
-    def completeTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
+    def completeTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either Unit] =
       storage.runTransaction(accountId)(_.completeTransfer(transactionId))
 
-    def revertFailedTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
+    def revertFailedTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either Unit] =
       storage.runTransaction(accountId)(_.revertFailedTransfer(transactionId))
   }
 

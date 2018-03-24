@@ -27,5 +27,5 @@ trait EventStorage[F[_], Aggregate, Snapshot, Event] {
     * @tparam Err
     * @return
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either List[Event]]
+  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): F[Err Either Unit]
 }
