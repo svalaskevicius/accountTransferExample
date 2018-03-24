@@ -25,6 +25,6 @@ class AccountService[F[_] : Monad] (storage: EventStorage[F, Account, AccountEve
   def completeTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
     storage.runTransaction(accountId)(_.completeTransfer(transactionId))
 
-  def revertFailedTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
-    storage.runTransaction(accountId)(_.revertFailedTransfer(transactionId))
+  def refundFailedTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
+    storage.runTransaction(accountId)(_.refundFailedTransfer(transactionId))
 }

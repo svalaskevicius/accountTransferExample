@@ -31,7 +31,7 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "fail to revert failed transfer" in {
-    UnregisteredAccount.revertFailedTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.refundFailedTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered))
   }
 
   "A registered account" should "not be allowed to register again" in {
@@ -89,7 +89,7 @@ class AccountSpec extends FlatSpec with Matchers {
 
   it should "fail to revert failed transaction for unknown transaction id" in {
     val transactionId = UUID.randomUUID()
-    accountWithBalance("id", 999).revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    accountWithBalance("id", 999).refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
   it should "allow to revert failed valid transaction" in {
@@ -99,12 +99,12 @@ class AccountSpec extends FlatSpec with Matchers {
       TransferStarted(transactionId, "accTo", PositiveNumber(999).get),
       Debited(transactionId, PositiveNumber(999).get)
     ))
-    val result = account2.revertFailedTransfer(transactionId)
+    val result = account2.refundFailedTransfer(transactionId)
     result should be(Right(List(TransferFailed(transactionId, "accTo", PositiveNumber(999).get))))
 
     val account3 = applyEvents(account2, result.getOrElse(List.empty))
     account3.currentBalance should be(Right(999))
-    account3.revertFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    account3.refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
   it should "throw when receiving registered event for a registered account" in {

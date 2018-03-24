@@ -43,15 +43,15 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
         case Right(_) => Right(())
       }
 
-    def revertFailedTransfer(transactionId: UUID, creditError: CreditError): F[TransferBetweenAccountsError Either Unit] =
-      accountService.revertFailedTransfer(accountFrom, transactionId).flatMap {
+    def refundFailedTransfer(transactionId: UUID, creditError: CreditError): F[TransferBetweenAccountsError Either Unit] =
+      accountService.refundFailedTransfer(accountFrom, transactionId).flatMap {
         case Left(err) => ???
         case Right(_) => processFailed(CreditFailed(creditError))
       }
 
     def creditForTransfer(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
       accountService.creditForTransfer(accountTo, transactionId, amount).flatMap {
-        case Left(err) => revertFailedTransfer(transactionId, err)
+        case Left(err) => refundFailedTransfer(transactionId, err)
         case Right(_) => completeTransaction(transactionId)
       }
 

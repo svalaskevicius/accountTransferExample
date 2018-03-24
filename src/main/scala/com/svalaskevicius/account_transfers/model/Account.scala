@@ -72,7 +72,7 @@ sealed trait Account {
   def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent]
   def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent]
   def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
-  def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
+  def refundFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
 }
 
 
@@ -92,7 +92,7 @@ case object UnregisteredAccount extends Account {
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 
-  override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
+  override def refundFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 }
 
@@ -121,7 +121,7 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
       case None => Left(CompleteTransferError.InvalidTransactionId)
     }
 
-  override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
+  override def refundFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     currentTransfers.find(_.transactionId == transactionId) match {
       case Some(transfer) => Right(List(TransferFailed(transactionId, transfer.accountTo, transfer.amount)))
       case None => Left(CompleteTransferError.InvalidTransactionId)
