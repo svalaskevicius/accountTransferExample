@@ -3,6 +3,7 @@ package com.svalaskevicius.account_transfers
 import java.util.UUID
 
 import com.svalaskevicius.account_transfers.Account.AccountId
+import com.svalaskevicius.account_transfers.AccountEvent.Registered
 
 
 sealed trait AccountReadError
@@ -60,7 +61,9 @@ sealed trait Account {
 case object UnregisteredAccount extends Account {
   override def currentBalance: AccountReadError Either Long = ???
 
-  override def register(accountId: AccountId): RegisterError Either List[AccountEvent] = ???
+  override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
+    Right(List(Registered(accountId)))
+
   override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] = ???
   override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] = ???
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
