@@ -47,6 +47,7 @@ object Account {
   type AccountId = String
 
   def applyEvent(account: Account, event: AccountEvent): Account = (account, event) match {
+    case (UnregisteredAccount, Registered(id)) => RegisteredAccount(id, 0, List.empty)
     case (acc: RegisteredAccount, tr: TransferStarted) => acc.copy(currentTransfers = tr :: acc.currentTransfers)
     case (acc: RegisteredAccount, Debited(_, amount)) => acc.copy(balance = acc.balance - amount.value)
     case (acc: RegisteredAccount, Credited(_, amount)) => acc.copy(balance = acc.balance + amount.value)

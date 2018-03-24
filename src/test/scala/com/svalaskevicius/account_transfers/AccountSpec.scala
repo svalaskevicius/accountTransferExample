@@ -9,6 +9,9 @@ import org.scalatest.{FlatSpec, Matchers}
 class AccountSpec extends FlatSpec with Matchers {
   "An unregistered account" should "be allowed to register" in {
     UnregisteredAccount.register("accountId") should be (Right(List(Registered("accountId"))))
+    Account.applyEvent(UnregisteredAccount, Registered("accountId")) should matchPattern {
+      case RegisteredAccount("accountId", 0, Nil) =>
+    }
   }
 
   it should "fail to return balance" in {
