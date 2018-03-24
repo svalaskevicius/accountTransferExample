@@ -6,13 +6,14 @@ import cats.Monad
 import cats.syntax.all._
 import com.svalaskevicius.account_transfers.model.Account.AccountId
 import com.svalaskevicius.account_transfers.model.AccountEvent.TransferStarted
-import com.svalaskevicius.account_transfers.model.{AccountEvent, DebitError, PositiveNumber}
+import com.svalaskevicius.account_transfers.model.{AccountEvent, CreditError, DebitError, PositiveNumber}
 import com.svalaskevicius.account_transfers.service.AccountService
-import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError.DebitFailed
+import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError.{CreditFailed, DebitFailed}
 
 sealed trait TransferBetweenAccountsError
 object TransferBetweenAccountsError {
   case class DebitFailed(debitError: DebitError) extends TransferBetweenAccountsError
+  case class CreditFailed(creditError: CreditError) extends TransferBetweenAccountsError
 }
 
 /**
@@ -42,9 +43,15 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
         case Right(_) => Right(())
       }
 
+    def revertFailedTransfer(transactionId: UUID, creditError: CreditError): F[TransferBetweenAccountsError Either Unit] =
+      accountService.revertFailedTransfer(accountFrom, transactionId).flatMap {
+        case Left(err) => ???
+        case Right(_) => processFailed(CreditFailed(creditError))
+      }
+
     def creditForTransfer(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
       accountService.creditForTransfer(accountTo, transactionId, amount).flatMap {
-        case Left(err) => ???
+        case Left(err) => revertFailedTransfer(transactionId, err)
         case Right(_) => completeTransaction(transactionId)
       }
 
