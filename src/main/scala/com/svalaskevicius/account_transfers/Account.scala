@@ -59,7 +59,8 @@ sealed trait Account {
 }
 
 case object UnregisteredAccount extends Account {
-  override def currentBalance: AccountReadError Either Long = ???
+  override def currentBalance: AccountReadError Either Long =
+    Left(AccountReadError.AccountHasNotBeenRegistered)
 
   override def register(accountId: AccountId): RegisterError Either List[AccountEvent] =
     Right(List(Registered(accountId)))
