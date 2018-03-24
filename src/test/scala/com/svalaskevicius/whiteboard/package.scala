@@ -58,6 +58,7 @@ package object whiteboard {
     def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent]
     def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent]
     def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
+    def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
   }
 
 
@@ -107,6 +108,9 @@ package object whiteboard {
 
     def completeTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
       storage.runTransaction(accountId)(_.completeTransfer(transactionId))
+
+    def revertFailedTransfer(accountId: AccountId, transactionId: UUID): F[CompleteTransferError Either List[AccountEvent]] =
+      storage.runTransaction(accountId)(_.revertFailedTransfer(transactionId))
   }
 
 
@@ -122,6 +126,15 @@ package object whiteboard {
     * @tparam F
     */
   class TransferProcess[F[_] : Monad] (accountService: AccountService[F]) {
+    /**
+      * Debit the from account, then credit the to account and complete transaction.
+      * On failure to credit - fail the transaction.
+      *
+      * @param accountFrom
+      * @param accountTo
+      * @param amount
+      * @return
+      */
     def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): F[TransferProcessFailure Either Unit] = ???
   }
 }
