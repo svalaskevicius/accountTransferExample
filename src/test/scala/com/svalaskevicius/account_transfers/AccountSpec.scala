@@ -74,10 +74,14 @@ class AccountSpec extends FlatSpec with Matchers {
     accountWithBalance("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
-  it should "allow to complete valid transaction" in {
+  it should "allow to complete valid transaction once" in {
+    val account1 = accountWithBalance("id", 999)
     val transactionId = UUID.randomUUID()
-    val account = Account.applyEvent(accountWithBalance("id", 999), TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
-    account.completeTransfer(transactionId) should be(Right(List(TransferCompleted(transactionId, "accTo", PositiveNumber(999).get))))
+    val account2 = Account.applyEvent(account1, TransferStarted(transactionId, "accTo", PositiveNumber(999).get))
+    val result = account2.completeTransfer(transactionId)
+    result should be(Right(List(TransferCompleted(transactionId, "accTo", PositiveNumber(999).get))))
+
+    Account.applyEvents(account2, result.getOrElse(List.empty)).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
   }
 
   it should "fail to revert failed transaction for unknown transaction id" in {
