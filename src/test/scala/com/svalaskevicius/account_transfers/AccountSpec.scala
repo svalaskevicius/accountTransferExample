@@ -2,7 +2,7 @@ package com.svalaskevicius.account_transfers
 
 import java.util.UUID
 
-import com.svalaskevicius.account_transfers.AccountEvent.{Debited, Registered, TransferStarted}
+import com.svalaskevicius.account_transfers.AccountEvent.{Credited, Debited, Registered, TransferStarted}
 import org.scalatest.{FlatSpec, Matchers}
 
 class AccountSpec extends FlatSpec with Matchers {
@@ -54,5 +54,10 @@ class AccountSpec extends FlatSpec with Matchers {
 
   it should "fail to debit if insufficient funds" in {
     new RegisteredAccount("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds))
+  }
+
+  it should "allow to be credited" in {
+    val transactionId = UUID.randomUUID()
+    new RegisteredAccount("id", 999).creditForTransfer(transactionId, PositiveNumber(1000).get) should be(Right(List(Credited(transactionId, PositiveNumber(1000).get))))
   }
 }
