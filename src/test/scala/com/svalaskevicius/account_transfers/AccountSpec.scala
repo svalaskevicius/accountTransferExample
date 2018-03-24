@@ -29,4 +29,8 @@ class AccountSpec extends FlatSpec with Matchers {
   it should "fail to revert failed transfer" in {
     UnregisteredAccount.revertFailedTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered))
   }
+
+  "A registered account" should "not be allowed to register again" in {
+    RegisteredAccount("id").register("id2") should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+  }
 }

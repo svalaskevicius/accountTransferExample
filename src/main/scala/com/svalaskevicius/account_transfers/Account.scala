@@ -77,3 +77,13 @@ case object UnregisteredAccount extends Account {
   override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     Left(CompleteTransferError.AccountHasNotBeenRegistered)
 }
+
+final case class RegisteredAccount(id: AccountId) extends Account {
+  override def currentBalance: AccountReadError Either Long = ???
+
+  override def register(accountId: AccountId): RegisterError Either List[AccountEvent] = ???
+  override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] = ???
+  override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] = ???
+  override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
+  override def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] = ???
+}
