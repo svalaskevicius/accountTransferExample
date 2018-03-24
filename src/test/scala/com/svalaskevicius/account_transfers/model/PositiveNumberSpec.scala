@@ -1,4 +1,4 @@
-package com.svalaskevicius.account_transfers
+package com.svalaskevicius.account_transfers.model
 
 import org.scalacheck.Gen
 import org.scalatest._

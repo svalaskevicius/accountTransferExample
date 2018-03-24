@@ -1,9 +1,9 @@
-package com.svalaskevicius.account_transfers
+package com.svalaskevicius.account_transfers.model
 
 import java.util.UUID
 
-import com.svalaskevicius.account_transfers.Account.AccountId
-import com.svalaskevicius.account_transfers.AccountEvent._
+import com.svalaskevicius.account_transfers.model.Account.AccountId
+import com.svalaskevicius.account_transfers.model.AccountEvent._
 
 
 sealed trait AccountReadError
@@ -64,6 +64,7 @@ object Account {
     events.foldLeft(account)(applyEvent)
 }
 
+
 sealed trait Account {
   def currentBalance: AccountReadError Either Long
 
@@ -73,6 +74,7 @@ sealed trait Account {
   def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
   def revertFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent]
 }
+
 
 case object UnregisteredAccount extends Account {
   override def currentBalance: AccountReadError Either Long =
@@ -124,5 +126,4 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
       case Some(transfer) => Right(List(TransferFailed(transactionId, transfer.accountTo, transfer.amount)))
       case None => Left(CompleteTransferError.InvalidTransactionId)
     }
-
 }

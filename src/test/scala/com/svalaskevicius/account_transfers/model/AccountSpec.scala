@@ -1,9 +1,9 @@
-package com.svalaskevicius.account_transfers
+package com.svalaskevicius.account_transfers.model
 
 import java.util.UUID
 
-import com.svalaskevicius.account_transfers.Account.AccountId
-import com.svalaskevicius.account_transfers.AccountEvent._
+import com.svalaskevicius.account_transfers.model.Account.AccountId
+import com.svalaskevicius.account_transfers.model.AccountEvent._
 import org.scalatest.{FlatSpec, Matchers}
 
 class AccountSpec extends FlatSpec with Matchers {
