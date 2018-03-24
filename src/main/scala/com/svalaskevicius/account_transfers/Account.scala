@@ -50,6 +50,9 @@ object Account {
     case (acc: RegisteredAccount, tr: TransferStarted) => acc.copy(currentTransfers = tr :: acc.currentTransfers)
     case (acc: RegisteredAccount, Debited(_, amount)) => acc.copy(balance = acc.balance - amount.value)
   }
+
+  def applyEvents(account: Account, events: List[AccountEvent]): Account =
+    events.foldLeft(account)(applyEvent)
 }
 
 sealed trait Account {

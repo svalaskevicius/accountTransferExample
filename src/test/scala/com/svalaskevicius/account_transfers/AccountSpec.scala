@@ -53,7 +53,7 @@ class AccountSpec extends FlatSpec with Matchers {
         amount2.value == 999 =>
     }
 
-    events.foldLeft(account)(Account.applyEvent).currentBalance should be(Right(0))
+    Account.applyEvents(account, events).currentBalance should be(Right(0))
   }
 
   it should "fail to debit if insufficient funds" in {
