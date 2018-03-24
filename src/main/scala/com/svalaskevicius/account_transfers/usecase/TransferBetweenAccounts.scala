@@ -6,14 +6,17 @@ import cats.Monad
 import cats.syntax.all._
 import com.svalaskevicius.account_transfers.model.Account.AccountId
 import com.svalaskevicius.account_transfers.model.AccountEvent.TransferStarted
-import com.svalaskevicius.account_transfers.model.{AccountEvent, CreditError, DebitError, PositiveNumber}
+import com.svalaskevicius.account_transfers.model._
 import com.svalaskevicius.account_transfers.service.AccountService
-import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError.{CreditFailed, DebitFailed}
+import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError._
 
 sealed trait TransferBetweenAccountsError
 object TransferBetweenAccountsError {
-  case class DebitFailed(debitError: DebitError) extends TransferBetweenAccountsError
-  case class CreditFailed(creditError: CreditError) extends TransferBetweenAccountsError
+  case class DebitFailed(accountFrom: AccountId, amount: PositiveNumber, debitError: DebitError) extends TransferBetweenAccountsError
+  case class CreditFailed(accountTo: AccountId, amount: PositiveNumber, creditError: CreditError, transactionId: UUID) extends TransferBetweenAccountsError
+  case class NoTransactionIdAfterTransferStart(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber) extends TransferBetweenAccountsError
+  case class FailedToCompleteTransferAfterDebitAndCredit(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber, transactionId: UUID, completeTransferError: CompleteTransferError) extends TransferBetweenAccountsError
+  case class FailedToRefundTransferAfterCreditFailure(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber, transactionId: UUID, creditError: CreditError, completeTransferError: CompleteTransferError) extends TransferBetweenAccountsError
 }
 
 /**
@@ -39,14 +42,14 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
 
     def completeTransaction(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
       accountService.completeTransfer(accountFrom, transactionId).map {
-        case Left(err) => ???
+        case Left(err) => Left(FailedToCompleteTransferAfterDebitAndCredit(accountFrom, accountTo, amount, transactionId, err))
         case Right(_) => Right(())
       }
 
     def refundFailedTransfer(transactionId: UUID, creditError: CreditError): F[TransferBetweenAccountsError Either Unit] =
       accountService.refundFailedTransfer(accountFrom, transactionId).flatMap {
-        case Left(err) => ???
-        case Right(_) => processFailed(CreditFailed(creditError))
+        case Left(err) => processFailed(FailedToRefundTransferAfterCreditFailure(accountFrom, accountTo, amount, transactionId, creditError, err))
+        case Right(_) => processFailed(CreditFailed(accountTo, amount, creditError, transactionId))
       }
 
     def creditForTransfer(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
@@ -57,12 +60,12 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
 
     def accountDebited(events: List[AccountEvent]): F[TransferBetweenAccountsError Either Unit] =
       findTransactionId(events) match {
-        case None => ???
+        case None => processFailed(NoTransactionIdAfterTransferStart(accountFrom, accountTo, amount))
         case Some(transactionId) => creditForTransfer(transactionId)
       }
 
     accountService.debitForTransfer(accountFrom, accountTo, amount).flatMap {
-      case Left(err) => processFailed(DebitFailed(err))
+      case Left(err) => processFailed(DebitFailed(accountFrom, amount, err))
       case Right(events) => accountDebited(events)
     }
   }
