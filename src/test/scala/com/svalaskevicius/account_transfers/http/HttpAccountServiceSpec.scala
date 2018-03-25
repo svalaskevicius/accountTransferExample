@@ -1,4 +1,4 @@
-package com.svalaskevicius.account_transfers
+package com.svalaskevicius.account_transfers.http
 
 import cats.effect.IO
 import com.svalaskevicius.account_transfers.model.Account
@@ -6,7 +6,7 @@ import com.svalaskevicius.account_transfers.service.{AccountService, InMemoryEve
 import org.http4s.{HttpService, Method, Request, Uri}
 import org.scalatest.{FlatSpec, Matchers}
 
-class HttpServerSpec extends FlatSpec with Matchers {
+class HttpAccountServiceSpec extends FlatSpec with Matchers {
   "Http server" should "allow transfer between accounts" in {
     val service = newHttpService
     runRequest(service, requestToRegisterAccount("account1", 100)) should be((200, """{"message":"Account registered"}"""))
@@ -63,7 +63,7 @@ class HttpServerSpec extends FlatSpec with Matchers {
   private def newHttpService = {
     val storage = new InMemoryEventStorage(Account.loader)
     val accountService = new AccountService(storage)
-    HttpServer.service(accountService)
+    new HttpAccountService(accountService).service
   }
 
   private def runRequest(service: HttpService[IO], req: Request[IO]) = {
