@@ -24,133 +24,23 @@ sbt assembly
 java -jar target/scala-2.12/account-transfers-assembly-0.1.0-SNAPSHOT.jar
 ```
 
-### Example service usage using HTTPie
-
-(https://httpie.org/)
-
-```
-# > http localhost:8080/account1/register initialBalance=1000
-HTTP/1.1 200 OK
-Content-Length: 32
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:41:38 GMT
-
-{
-    "message": "Account registered"
-}
-
-# > http localhost:8080/account2/register initialBalance=1000
-HTTP/1.1 200 OK
-Content-Length: 32
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:41:41 GMT
-
-{
-    "message": "Account registered"
-}
-
-# > http localhost:8080/account1/balance
-HTTP/1.1 200 OK
-Content-Length: 16
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:41:50 GMT
-
-{
-    "balance": 1000
-}
-
-# > http localhost:8080/account2/balance
-HTTP/1.1 200 OK
-Content-Length: 16
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:41:53 GMT
-
-{
-    "balance": 1000
-}
-
-# > http localhost:8080/account1/transfer accountTo=account2 amount=500
-HTTP/1.1 200 OK
-Content-Length: 32
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:42:36 GMT
-
-{
-    "message": "Transfer completed"
-}
-
-# > http localhost:8080/account1/balance
-HTTP/1.1 200 OK
-Content-Length: 15
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:42:40 GMT
-
-{
-    "balance": 500
-}
-
-# > http localhost:8080/account2/balance
-HTTP/1.1 200 OK
-Content-Length: 16
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:42:43 GMT
-
-{
-    "balance": 1500
-}
-
-# > http localhost:8080/account1/transfer accountTo=account2 amount=5000
-HTTP/1.1 400 Bad Request
-Content-Length: 73
-Content-Type: text/plain; charset=UTF-8
-Date: Sun, 25 Mar 2018 17:42:51 GMT
-
-Could not complete transfer: DebitFailed(account1,5000,InsufficientFunds)
-
-# > http localhost:8080/account1/transfer accountTo=unknownAccount amount=100
-HTTP/1.1 400 Bad Request
-Content-Length: 126
-Content-Type: text/plain; charset=UTF-8
-Date: Sun, 25 Mar 2018 17:43:04 GMT
-
-Could not complete transfer: CreditFailed(unknownAccount,100,AccountHasNotBeenRegistered,bc698419-fa09-435b-b54b-ff60c97f9554)
-
-# > http localhost:8080/account1/balance
-HTTP/1.1 200 OK
-Content-Length: 15
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:43:08 GMT
-
-{
-    "balance": 500
-}
-
-# > http localhost:8080/account2/balance
-HTTP/1.1 200 OK
-Content-Length: 16
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:43:11 GMT
-
-{
-    "balance": 1500
-}
-```
-
 ### Example service usage using curl
 
-All above requests can be executed using curl too, e.g.:
-
 ```
-# > curl -D - -X POST localhost:8080/account4/register -d '{"initialBalance": 1000}'
-HTTP/1.1 200 OK
-Content-Type: application/json
-Date: Sun, 25 Mar 2018 17:48:15 GMT
-Content-Length: 32
-
+# > curl -X POST localhost:8080/account5/register -d '{"initialBalance": 1000}'
 {"message":"Account registered"}
-
-# > curl -X GET localhost:8080/account4/balance
+# > curl -X POST localhost:8080/account6/register -d '{"initialBalance": 1000}'
+{"message":"Account registered"}
+# > curl -X GET localhost:8080/account5/balance
 {"balance":1000}
+# > curl -X GET localhost:8080/account6/balance
+{"balance":1000}
+# > curl -X POST localhost:8080/account5/transfer -d '{"accountTo": "account6", "amount": 500}'
+{"message":"Transfer completed"}
+# > curl -X GET localhost:8080/account5/balance
+{"balance":500}
+# > curl -X GET localhost:8080/account6/balance
+{"balance":1500}
 ```
 
 ## Development considerations
