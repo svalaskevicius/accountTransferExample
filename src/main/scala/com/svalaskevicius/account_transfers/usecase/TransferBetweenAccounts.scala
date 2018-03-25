@@ -20,18 +20,28 @@ object TransferBetweenAccountsError {
 }
 
 /**
+  * Execute a transfer money between two accounts operation.
+  *
   * While in a distributed system a process would be listening for events and emitting commands instead of
-  * invoking and controlling the flow directly, in this example such behaviour is a useful approximation - as
-  * there is no event subscription/notification mechanism.
+  * invoking and controlling the flow directly, in this example a specific usecase class is a useful, and much
+  * simpler approximation. A downside of this approach is its (non-)resilience to system failures - e.g. if the
+  * processing node halts in the middle of the transaction, the whole process currently stops without means to
+  * resume it.
   *
   * @param accountService
-  * @tparam F
+  * @tparam F             Wrapper type (see "Tagless Final" pattern). Examples could be a `Future`, `Task` or even `Id`
   */
 class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit fMonad: Monad[F]) {
 
   /**
-    * Debit the from account, then credit the to account and complete transaction.
+    * Execute transfer operation.
+    *
+    * 1. Debit the `amount` from `accountFrom`
+    * 2. Credit the `amount` to the account `accountTo`
+    * 3. Complete the transaction
+    *
     * On failure to credit - fail the transaction and refund the debited amount.
+    * On any other failure - return the failure for manual reconciliation.
     *
     * @param accountFrom
     * @param accountTo

@@ -23,6 +23,11 @@ object HttpAccountService {
   implicit val transferAmountRequestDecoder: Decoder[TransferAmountRequest] = deriveDecoder[TransferAmountRequest]
 }
 
+/**
+  * Http service exposing REST endpoints for a given accountService
+  *
+  * @param accountService
+  */
 class HttpAccountService(accountService: AccountService[Id]) extends Http4sDsl[IO] {
 
   import HttpAccountService._

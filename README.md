@@ -1,9 +1,9 @@
 # Account transfers
 
 ##TODO
+ - exceptions?
  - add logging
  - change logging level to INFO
- - add scaladocs
  - complete readme
  - dockerfile?
  - snapshotting?

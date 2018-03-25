@@ -64,7 +64,9 @@ object Account {
   }
 }
 
-
+/**
+  * Account aggregate.
+  */
 sealed trait Account {
   def currentBalance: AccountReadError Either Long
 

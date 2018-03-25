@@ -5,6 +5,13 @@ import java.util.concurrent.ConcurrentHashMap
 import cats.Id
 import com.svalaskevicius.account_transfers.model.{AggregateLoader, EventStorage}
 
+/**
+  * `ConcurrentHashMap` backed `EventStorage` implementation.
+  *
+  * @param aggregateLoader injected `AggregateLoaded` implementation
+  * @tparam Aggregate      Aggregate type
+  * @tparam Event          Event type that is compatible with the Aggregate
+  */
 class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoader[Aggregate, Event]) extends EventStorage[Id, Aggregate, Event] {
 
   private val storage = new ConcurrentHashMap[String, List[Event]]()
