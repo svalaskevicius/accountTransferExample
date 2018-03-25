@@ -38,7 +38,7 @@ class TransferBetweenAccountsSpec extends FlatSpec with Matchers with PropertyCh
     accountService.register("account_1", 10000)
     accountService.register("account_2", 10000)
 
-    transferBetweenAccounts("account_1", "account_2", PositiveNumber(5000000).get) should be(Left(DebitFailed("account_1", PositiveNumber(5000000).get, InsufficientFunds)))
+    transferBetweenAccounts("account_1", "account_2", PositiveNumber(5000000).get) should be(Left(DebitFailed("account_1", 5000000, InsufficientFunds)))
 
     accountService.currentBalance("account_1") should be(Right(10000))
     accountService.currentBalance("account_2") should be(Right(10000))
@@ -52,7 +52,7 @@ class TransferBetweenAccountsSpec extends FlatSpec with Matchers with PropertyCh
     accountService.register("account_1", 10000)
 
     transferBetweenAccounts("account_1", "account_2", PositiveNumber(500).get) should matchPattern {
-      case Left(CreditFailed("account_2", amount, AccountHasNotBeenRegistered, _: UUID)) if amount.value == 500 =>
+      case Left(CreditFailed("account_2", 500, AccountHasNotBeenRegistered, _: UUID)) =>
     }
 
     accountService.currentBalance("account_1") should be(Right(10000))
