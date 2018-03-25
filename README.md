@@ -47,8 +47,8 @@ java -jar target/scala-2.12/account-transfers-assembly-0.1.0-SNAPSHOT.jar
 
 ### Why Event Sourcing?
 
-As transferring money between accounts is a responsible operation, and the service
-provider has to always be able to prove the correctness of the state at any given time.
+As transferring money between accounts is a responsible operation, the service
+provider has to be able to prove the correctness of the state at any given time.
 
 EventSourcing makes logging events as the first class citizen of the application - 
 the stored events drive the state change - thus, the logged data becomes the primary
