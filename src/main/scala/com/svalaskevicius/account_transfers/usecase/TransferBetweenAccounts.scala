@@ -27,7 +27,8 @@ object TransferBetweenAccountsError {
   * invoking and controlling the flow directly, in this example a specific usecase class is a useful, and much
   * simpler approximation. A downside of this approach is its (non-)resilience to system failures - e.g. if the
   * processing node halts in the middle of the transaction, the whole process currently stops without means to
-  * resume it.
+  * resume it. Of course, even if this process fails, because we're storing all domain events, the account operations
+  * can be reconciled by reviewing the event history.
   *
   * @param accountService
   * @tparam F             Wrapper type (see "Tagless Final" pattern). Examples could be a `Future`, `Task` or even `Id`
