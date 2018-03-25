@@ -1,6 +1,21 @@
 # Account transfers
 
+##TODO
+ - add logging
+ - change logging level to INFO
+ - add scaladocs
+ - complete readme
+ - dockerfile?
+ - snapshotting?
+
 ## Usage instructions
+
+ - sbt commands - compile, test, assembly
+ - curl + httpie
+
+### Prerequisites 
+
+ - tested with jre version
 
 ## Development considerations
 
