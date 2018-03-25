@@ -47,16 +47,12 @@ java -jar target/scala-2.12/account-transfers-assembly-0.1.0-SNAPSHOT.jar
 
 ### Why Event Sourcing?
 
-As transferring money between accounts is a very responsible operation, we'd need to
-log all requests and state changes to be able to prove the correctness of the state 
-at any given time.
+As transferring money between accounts is a responsible operation, and the service
+provider has to always be able to prove the correctness of the state at any given time.
 
 EventSourcing makes logging events as the first class citizen of the application - 
 the stored events drive the state change - thus, the logged data becomes the primary
 source of truth.
-
-There are more gains that can be mentioned as well, such as ability to analyse the 
-events to improve the processes etc 
 
 ### Why Tagless Final?
 
@@ -69,13 +65,13 @@ More info: https://softwaremill.com/free-monad-or-tagless-final-pres/
 ### Why the 3rd step to complete transaction?
 
 You'll notice that after the target account has been credited, the source account 
-completes the transaction - is this not too much for a simple transfer?
+completes the transaction (there is an event for this) - is this not too much for a simple transfer?
 
 Because we cannot lock both Accounts at the same time, there are no consistency 
 guarantees that the debited amount has been credited (e.g. in case of network issues or 
 a system crash during the transaction). 
 
-Knowing a list of started, but not completed transactions is useful in reconciliation process.   
+Knowing a list of started, but not completed transactions is useful in a reconciliation process.   
 
 ## Further improvements
 
@@ -86,7 +82,7 @@ The current implementation is not optimised for performance at all.
 In fact, the more changes a single account makes, the slower it will process new commands
 because every time it will process the full history of its events.
 
-There is a simple solution for this though, (not included in this repo (yet?) to minimise the 
+There is a simple solution for this though, (not included in this example (yet?) to minimise the 
 scope) - storing state snapshots of an aggregate periodically and only replaying 
 events that happened after the snapshot was taken.
 
@@ -96,7 +92,9 @@ The main changes for this would be:
 
 ### Optimistic concurrency control
 
-A potential improvement could be to use optimistic concurrency control - https://en.wikipedia.org/wiki/Optimistic_concurrency_control
+A potential improvement could also be to use optimistic concurrency control -
+ https://en.wikipedia.org/wiki/Optimistic_concurrency_control
+
 Of course, a durable EventStorage implementation would be a priority :)
 
 ### Versioning of events - changing the domain over time
