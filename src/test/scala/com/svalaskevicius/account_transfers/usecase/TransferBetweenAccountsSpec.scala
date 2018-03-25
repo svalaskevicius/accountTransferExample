@@ -77,6 +77,5 @@ class TransferBetweenAccountsSpec extends FlatSpec with Matchers with PropertyCh
 
     accountService.currentBalance("account_1") should be(Right(10000))
     accountService.currentBalance("account_2") should be(Right(10000))
-
   }
 }
