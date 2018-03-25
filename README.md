@@ -1,9 +1,6 @@
 # Account transfers
 
 ##TODO
- - exceptions?
- - add logging
- - change logging level to INFO
  - complete readme
  - dockerfile?
  - snapshotting?
