@@ -7,7 +7,7 @@ object PositiveNumber {
     * @param value
     * @return
     */
-  def apply(value: Long) = if (value > 0) Some(new PositiveNumber(value)) else None
+  def apply(value: Long): Option[PositiveNumber] = if (value > 0) Some(new PositiveNumber(value)) else None
 }
 
 /**
