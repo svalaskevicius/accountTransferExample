@@ -1,6 +1,7 @@
 package com.svalaskevicius.account_transfers.http
 
-import com.svalaskevicius.account_transfers.model.{AccountReadError, PositiveNumber, RegisterError}
+import com.svalaskevicius.account_transfers.model.AccountOperationError.{AccountHasAlreadyBeenRegistered, AccountHasNotBeenRegistered}
+import com.svalaskevicius.account_transfers.model.PositiveNumber
 import com.svalaskevicius.account_transfers.service.AccountService
 import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccounts
 import io.circe.{Decoder, Json}
@@ -47,7 +48,7 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
       accountService.register(accountId, requestData.initialBalance).flatMap{ _ =>
         Ok(Json.obj("message" -> Json.fromString(s"Account registered")))
       }.onErrorRecoverWith {
-        case e: RegisterError.AccountHasAlreadyBeenRegistered => Conflict("Account has already been registered")
+        case e: AccountHasAlreadyBeenRegistered => Conflict("Account has already been registered")
         case error => genericErrorHandler("Could not register account")(error)
       }
     }
@@ -56,7 +57,7 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
     accountService.currentBalance(accountId).flatMap { balance =>
       Ok(Json.obj("balance" -> Json.fromLong(balance)))
     }.onErrorRecoverWith {
-      case e: AccountReadError.AccountHasNotBeenRegistered => NotFound("Account could not be found")
+      case e: AccountHasNotBeenRegistered => NotFound("Account could not be found")
       case error => genericErrorHandler("Could not retrieve account balance")(error)
     }
 

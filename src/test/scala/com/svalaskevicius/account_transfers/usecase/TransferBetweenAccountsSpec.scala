@@ -2,8 +2,6 @@ package com.svalaskevicius.account_transfers.usecase
 
 import java.util.concurrent.Executors
 
-import com.svalaskevicius.account_transfers.model.CreditError.AccountHasNotBeenRegistered
-import com.svalaskevicius.account_transfers.model.DebitError.InsufficientFunds
 import com.svalaskevicius.account_transfers.model.{Account, PositiveNumber}
 import com.svalaskevicius.account_transfers.service.{AccountService, InMemoryEventStorage}
 import org.scalacheck.Gen
@@ -12,8 +10,8 @@ import org.scalatest.prop.PropertyChecks
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-
 import com.svalaskevicius.account_transfers.TestUtils._
+import com.svalaskevicius.account_transfers.model.AccountOperationError.{AccountHasNotBeenRegistered, InsufficientFunds}
 
 class TransferBetweenAccountsSpec extends FlatSpec with Matchers with PropertyChecks {
   "TransferBetweenAccounts" should "transfer requested amount" in forAll (Gen.choose(1, 10000)) { amount =>

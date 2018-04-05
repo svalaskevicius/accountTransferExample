@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.svalaskevicius.account_transfers.model.Account.AccountId
 import com.svalaskevicius.account_transfers.model.AccountEvent.TransferStarted
+import com.svalaskevicius.account_transfers.model.AccountOperationError.AccountHasNotBeenRegistered
 import com.svalaskevicius.account_transfers.model._
 import com.svalaskevicius.account_transfers.service.AccountService
 import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError._
@@ -11,11 +12,7 @@ import monix.eval.Task
 
 sealed trait TransferBetweenAccountsError extends Throwable
 object TransferBetweenAccountsError {
-  case class DebitFailed(accountFrom: AccountId, amount: Long, debitError: DebitError) extends TransferBetweenAccountsError
-  case class CreditFailed(accountTo: AccountId, amount: Long, creditError: CreditError, transactionId: UUID) extends TransferBetweenAccountsError
-  case class NoTransactionIdAfterTransferStart(accountFrom: AccountId, accountTo: AccountId, amount: Long) extends TransferBetweenAccountsError
-  case class FailedToCompleteTransferAfterDebitAndCredit(accountFrom: AccountId, accountTo: AccountId, amount: Long, transactionId: UUID, completeTransferError: CompleteTransferError) extends TransferBetweenAccountsError
-  case class FailedToRefundTransferAfterCreditFailure(accountFrom: AccountId, accountTo: AccountId, amount: Long, transactionId: UUID, creditError: CreditError, completeTransferError: CompleteTransferError) extends TransferBetweenAccountsError
+  case class NoTransactionIdAfterTransferStart(accountFrom: AccountId, accountTo: AccountId, amount: Long) extends Throwable
 }
 
 /**
@@ -64,7 +61,7 @@ class TransferBetweenAccounts (accountService: AccountService) {
 
     def creditForTransfer(transactionId: UUID) =
       accountService.creditForTransfer(accountTo, transactionId, amount).onErrorRecoverWith {
-        case err: CreditError =>
+        case err: AccountHasNotBeenRegistered =>
           accountService.refundFailedTransfer(accountFrom, transactionId).flatMap { _ =>
             Task.raiseError(err)
           }
