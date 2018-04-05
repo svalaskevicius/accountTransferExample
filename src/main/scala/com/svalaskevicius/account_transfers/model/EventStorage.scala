@@ -48,7 +48,7 @@ trait EventStorage[Aggregate, Event] {
     * @tparam A          result type of `f`
     * @return            the aggregate state with all events applied
     */
-  def readOperation[Err, A](aggregateId: String)(f: Aggregate => Err Either A): Task[Err Either A]
+  def readOperation[Err <: Throwable, A](aggregateId: String)(f: Aggregate => Err Either A): Task[A]
 
   /**
     * Run a transaction for a given aggregate, store the changes (events) on success, and return their result.
@@ -58,5 +58,5 @@ trait EventStorage[Aggregate, Event] {
     * @tparam Err        error type that `f` returns
     * @return            the result of the provided function `f`
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Task[Err Either List[Event]]
+  def runTransaction[Err <: Throwable](aggregateId: String)(f: Aggregate => Err Either List[Event]): Task[List[Event]]
 }

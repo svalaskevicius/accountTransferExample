@@ -10,4 +10,7 @@ object TestUtils {
     import monix.execution.Scheduler.Implicits.global
     t.runSyncUnsafe(Duration.Inf)
   }
+  def runFailingTask[A](t: Task[A]): Throwable =
+    runTask(t.failed)
+
 }

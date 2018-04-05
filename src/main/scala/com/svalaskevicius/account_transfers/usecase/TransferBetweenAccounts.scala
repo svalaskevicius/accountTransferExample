@@ -8,9 +8,8 @@ import com.svalaskevicius.account_transfers.model._
 import com.svalaskevicius.account_transfers.service.AccountService
 import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError._
 import monix.eval.Task
-import org.log4s.getLogger
 
-sealed trait TransferBetweenAccountsError
+sealed trait TransferBetweenAccountsError extends Throwable
 object TransferBetweenAccountsError {
   case class DebitFailed(accountFrom: AccountId, amount: Long, debitError: DebitError) extends TransferBetweenAccountsError
   case class CreditFailed(accountTo: AccountId, amount: Long, creditError: CreditError, transactionId: UUID) extends TransferBetweenAccountsError
@@ -33,8 +32,6 @@ object TransferBetweenAccountsError {
   */
 class TransferBetweenAccounts (accountService: AccountService) {
 
-  private val logger = getLogger
-
   private case class Request(accountFrom: AccountId, accountTo: AccountId, amount: Long)
 
   /**
@@ -52,49 +49,32 @@ class TransferBetweenAccounts (accountService: AccountService) {
     * @param amount
     * @return
     */
-  def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[TransferBetweenAccountsError Either Unit] = {
+  def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[Unit] = {
 
     lazy val request = Request(accountFrom, accountTo, amount.value)
 
-    def completeTransaction(transactionId: UUID): Task[TransferBetweenAccountsError Either Unit] =
-      accountService.completeTransfer(accountFrom, transactionId).map {
-        case Left(err) => logAndReturnFailure(request, FailedToCompleteTransferAfterDebitAndCredit(accountFrom, accountTo, amount.value, transactionId, err))
-        case Right(_) => Right(())
+    def findTransactionId(events: List[AccountEvent]) = Task {
+      events.collectFirst {
+        case TransferStarted(id, _, _) => id
       }
-
-    def refundFailedTransfer(transactionId: UUID, creditError: CreditError): Task[TransferBetweenAccountsError Either Unit] =
-      accountService.refundFailedTransfer(accountFrom, transactionId).flatMap {
-        case Left(err) => processFailed(request, FailedToRefundTransferAfterCreditFailure(accountFrom, accountTo, amount.value, transactionId, creditError, err))
-        case Right(_) => processFailed(request, CreditFailed(accountTo, amount.value, creditError, transactionId))
-      }
-
-    def creditForTransfer(transactionId: UUID): Task[TransferBetweenAccountsError Either Unit] =
-      accountService.creditForTransfer(accountTo, transactionId, amount).flatMap {
-        case Left(err) => refundFailedTransfer(transactionId, err)
-        case Right(_) => completeTransaction(transactionId)
-      }
-
-    def accountDebited(events: List[AccountEvent]): Task[TransferBetweenAccountsError Either Unit] =
-      findTransactionId(events) match {
-        case None => processFailed(request, NoTransactionIdAfterTransferStart(accountFrom, accountTo, amount.value))
-        case Some(transactionId) => creditForTransfer(transactionId)
-      }
-
-    accountService.debitForTransfer(accountFrom, accountTo, amount).flatMap {
-      case Left(err) => processFailed(request, DebitFailed(accountFrom, amount.value, err))
-      case Right(events) => accountDebited(events)
+    }.flatMap {
+      case Some(transactionId) => Task.now(transactionId)
+      case None => Task.raiseError(NoTransactionIdAfterTransferStart(accountFrom, accountTo, amount.value))
     }
-  }
 
-  private def logAndReturnFailure(request: Request, err: TransferBetweenAccountsError): TransferBetweenAccountsError Either Unit = {
-    logger.error(s"Failed transfer for $request: $err")
-    Left(err)
-  }
+    def creditForTransfer(transactionId: UUID) =
+      accountService.creditForTransfer(accountTo, transactionId, amount).onErrorRecoverWith {
+        case err: CreditError =>
+          accountService.refundFailedTransfer(accountFrom, transactionId).flatMap { _ =>
+            Task.raiseError(err)
+          }
+      }
 
-  private def processFailed(request: Request, err: TransferBetweenAccountsError): Task[TransferBetweenAccountsError Either Unit] =
-    Task.now(logAndReturnFailure(request, err))
-
-  private def findTransactionId(events: List[AccountEvent]) = events.collectFirst {
-    case TransferStarted(id, _, _) => id
+    for {
+      debitEvents <- accountService.debitForTransfer(accountFrom, accountTo, amount)
+      transactionId <- findTransactionId(debitEvents)
+      _ <- creditForTransfer(transactionId)
+      _ <- accountService.completeTransfer(accountFrom, transactionId)
+    } yield ()
   }
 }

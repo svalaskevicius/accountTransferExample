@@ -6,31 +6,31 @@ import com.svalaskevicius.account_transfers.model.Account.AccountId
 import com.svalaskevicius.account_transfers.model.AccountEvent._
 
 
-sealed trait AccountReadError
+sealed trait AccountReadError extends Throwable
 object AccountReadError {
-  case object AccountHasNotBeenRegistered extends AccountReadError
+  case class AccountHasNotBeenRegistered() extends AccountReadError
 }
 
-sealed trait RegisterError
+sealed trait RegisterError extends Throwable
 object RegisterError {
-  case object AccountHasAlreadyBeenRegistered extends RegisterError
+  case class AccountHasAlreadyBeenRegistered() extends RegisterError
 }
 
-sealed trait DebitError
+sealed trait DebitError extends Throwable
 object DebitError {
-  case object AccountHasNotBeenRegistered extends DebitError
-  case object InsufficientFunds extends DebitError
+  case class AccountHasNotBeenRegistered() extends DebitError
+  case class InsufficientFunds() extends DebitError
 }
 
-sealed trait CreditError
+sealed trait CreditError extends Throwable
 object CreditError {
-  case object AccountHasNotBeenRegistered extends CreditError
+  case class AccountHasNotBeenRegistered() extends CreditError
 }
 
-sealed trait CompleteTransferError
+sealed trait CompleteTransferError extends Throwable
 object CompleteTransferError {
-  case object AccountHasNotBeenRegistered extends CompleteTransferError
-  case object InvalidTransactionId extends CompleteTransferError
+  case class AccountHasNotBeenRegistered() extends CompleteTransferError
+  case class InvalidTransactionId() extends CompleteTransferError
 }
 
 sealed trait AccountEvent
@@ -80,22 +80,22 @@ sealed trait Account {
 
 case object UnregisteredAccount extends Account {
   override def currentBalance: AccountReadError Either Long =
-    Left(AccountReadError.AccountHasNotBeenRegistered)
+    Left(AccountReadError.AccountHasNotBeenRegistered())
 
   override def register(accountId: AccountId, initialBalance: Long): RegisterError Either List[AccountEvent] =
     Right(List(Registered(accountId, initialBalance)))
 
   override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] =
-    Left(DebitError.AccountHasNotBeenRegistered)
+    Left(DebitError.AccountHasNotBeenRegistered())
 
   override def creditForTransfer(transactionId: UUID, amount: PositiveNumber): CreditError Either List[AccountEvent] =
-    Left(CreditError.AccountHasNotBeenRegistered)
+    Left(CreditError.AccountHasNotBeenRegistered())
 
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
-    Left(CompleteTransferError.AccountHasNotBeenRegistered)
+    Left(CompleteTransferError.AccountHasNotBeenRegistered())
 
   override def refundFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
-    Left(CompleteTransferError.AccountHasNotBeenRegistered)
+    Left(CompleteTransferError.AccountHasNotBeenRegistered())
 }
 
 
@@ -104,11 +104,11 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
     Right(balance)
 
   override def register(accountId: AccountId, initialBalance: Long): RegisterError Either List[AccountEvent] =
-    Left(RegisterError.AccountHasAlreadyBeenRegistered)
+    Left(RegisterError.AccountHasAlreadyBeenRegistered())
 
   override def debitForTransfer(accountTo: AccountId, amount: PositiveNumber): DebitError Either List[AccountEvent] =
     if (amount.value > balance) {
-      Left(DebitError.InsufficientFunds)
+      Left(DebitError.InsufficientFunds())
     } else {
       val newTransactionId = UUID.randomUUID()
       Right(List(TransferStarted(newTransactionId, accountTo, amount), Debited(newTransactionId, amount)))
@@ -120,12 +120,12 @@ final case class RegisteredAccount(id: AccountId, balance: Long, currentTransfer
   override def completeTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     currentTransfers.find(_.transactionId == transactionId) match {
       case Some(transfer) => Right(List(TransferCompleted(transactionId, transfer.accountTo, transfer.amount)))
-      case None => Left(CompleteTransferError.InvalidTransactionId)
+      case None => Left(CompleteTransferError.InvalidTransactionId())
     }
 
   override def refundFailedTransfer(transactionId: UUID): CompleteTransferError Either List[AccountEvent] =
     currentTransfers.find(_.transactionId == transactionId) match {
       case Some(transfer) => Right(List(TransferFailed(transactionId, transfer.accountTo, transfer.amount)))
-      case None => Left(CompleteTransferError.InvalidTransactionId)
+      case None => Left(CompleteTransferError.InvalidTransactionId())
     }
 }

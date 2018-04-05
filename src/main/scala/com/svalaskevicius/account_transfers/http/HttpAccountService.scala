@@ -9,6 +9,7 @@ import org.http4s.{HttpService, Request, Response}
 import org.http4s.dsl.Http4sDsl
 import io.circe.generic.semiauto._
 import monix.eval.Task
+import org.log4s.getLogger
 
 case class RegisterAccountRequest(initialBalance: Long)
 
@@ -31,6 +32,8 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
 
   import HttpAccountService._
 
+  private val logger = getLogger
+
   private val transferBetweenAccounts = new TransferBetweenAccounts(accountService)
 
   val service: HttpService[Task] = HttpService[Task] {
@@ -41,24 +44,27 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
 
   private def registerAccount(accountId: String, req: Request[Task]) =
     withJsonRequestAs[RegisterAccountRequest](req) { requestData =>
-      accountService.register(accountId, requestData.initialBalance).flatMap {
-        case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Account registered")))
-        case Left(RegisterError.AccountHasAlreadyBeenRegistered) => Conflict("Account has already been registered")
+      accountService.register(accountId, requestData.initialBalance).flatMap{ _ =>
+        Ok(Json.obj("message" -> Json.fromString(s"Account registered")))
+      }.onErrorRecoverWith {
+        case e: RegisterError.AccountHasAlreadyBeenRegistered => Conflict("Account has already been registered")
+        case error => genericErrorHandler("Could not register account")(error)
       }
     }
 
   private def retrieveAccountBalance(accountId: String) =
-    accountService.currentBalance(accountId).flatMap {
-      case Left(AccountReadError.AccountHasNotBeenRegistered) => NotFound("Account could not be found")
-      case Right(balance) => Ok(Json.obj("balance" -> Json.fromLong(balance)))
+    accountService.currentBalance(accountId).flatMap { balance =>
+      Ok(Json.obj("balance" -> Json.fromLong(balance)))
+    }.onErrorRecoverWith {
+      case e: AccountReadError.AccountHasNotBeenRegistered => NotFound("Account could not be found")
+      case error => genericErrorHandler("Could not retrieve account balance")(error)
     }
 
   private def transferMoney(accountId: String, req: Request[Task]) =
     withJsonRequestAs[TransferAmountRequest](req) { requestData =>
-      transferBetweenAccounts(accountId, requestData.accountTo, requestData.amount).flatMap {
-        case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Transfer completed")))
-        case Left(error) => BadRequest(s"Could not complete transfer: $error")
-      }
+      transferBetweenAccounts(accountId, requestData.accountTo, requestData.amount).flatMap { _ =>
+        Ok(Json.obj("message" -> Json.fromString(s"Transfer completed")))
+      }.onErrorHandleWith(genericErrorHandler("Could not complete transfer"))
     }
 
   private def withJsonRequestAs[A: Decoder](req: Request[Task])(f: A => Task[Response[Task]]): Task[Response[Task]] =
@@ -67,4 +73,10 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
       case Right(Left(decodeFailure)) => BadRequest(s"Could not read request: ${decodeFailure.message}")
       case Left(decodeFailure) => BadRequest(s"Could not read request as Json: ${decodeFailure.message}")
     }
+
+
+  private def genericErrorHandler(message: String)(err: Throwable) = {
+    logger.error(err)(message)
+    InternalServerError(message)
+  }
 }

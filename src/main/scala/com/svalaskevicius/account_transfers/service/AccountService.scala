@@ -15,21 +15,21 @@ import monix.eval.Task
   */
 class AccountService (storage: EventStorage[Account, AccountEvent]) {
 
-  def currentBalance(accountId: AccountId): Task[AccountReadError Either Long] =
+  def currentBalance(accountId: AccountId): Task[Long] =
     storage.readOperation(accountId)(_.currentBalance)
 
-  def register(accountId: AccountId, initialBalance: Long): Task[RegisterError Either List[AccountEvent]] =
+  def register(accountId: AccountId, initialBalance: Long): Task[List[AccountEvent]] =
     storage.runTransaction(accountId)(_.register(accountId, initialBalance))
 
-  def debitForTransfer(accountId: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[DebitError Either List[AccountEvent]] =
+  def debitForTransfer(accountId: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[List[AccountEvent]] =
     storage.runTransaction(accountId)(_.debitForTransfer(accountTo: AccountId, amount))
 
-  def creditForTransfer(accountId: AccountId, transactionId: UUID, amount: PositiveNumber): Task[CreditError Either List[AccountEvent]] =
+  def creditForTransfer(accountId: AccountId, transactionId: UUID, amount: PositiveNumber): Task[List[AccountEvent]] =
     storage.runTransaction(accountId)(_.creditForTransfer(transactionId, amount))
 
-  def completeTransfer(accountId: AccountId, transactionId: UUID): Task[CompleteTransferError Either List[AccountEvent]] =
+  def completeTransfer(accountId: AccountId, transactionId: UUID): Task[List[AccountEvent]] =
     storage.runTransaction(accountId)(_.completeTransfer(transactionId))
 
-  def refundFailedTransfer(accountId: AccountId, transactionId: UUID): Task[CompleteTransferError Either List[AccountEvent]] =
+  def refundFailedTransfer(accountId: AccountId, transactionId: UUID): Task[List[AccountEvent]] =
     storage.runTransaction(accountId)(_.refundFailedTransfer(transactionId))
 }

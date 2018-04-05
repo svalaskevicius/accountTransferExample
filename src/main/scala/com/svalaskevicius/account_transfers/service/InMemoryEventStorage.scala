@@ -22,9 +22,9 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @param aggregateId
     * @return
     */
-  def readOperation[Err, A](aggregateId: String)(f: Aggregate => Err Either A): Task[Err Either A] = Task {
+  def readOperation[Err <: Throwable, A](aggregateId: String)(f: Aggregate => Err Either A): Task[A] = Task {
     f(aggregateFromStoredInfo(storage.get(aggregateId)))
-  }
+  }.flatMap(eitherToTaskFailure)
 
   /**
     * Run a transaction for a given aggregate, store the changes, and return their result
@@ -34,7 +34,7 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @tparam Err
     * @return
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Task[Err Either List[Event]] = Task {
+  def runTransaction[Err <: Throwable](aggregateId: String)(f: Aggregate => Err Either List[Event]): Task[List[Event]] = Task {
     var returnValue: Either[Err, List[Event]] = Right(List.empty)
     storage.compute(aggregateId, (_, currentEventsOrNull) => {
       f(aggregateFromStoredInfo(currentEventsOrNull)) match {
@@ -48,10 +48,15 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
       }
     })
     returnValue
-  }
+  }.flatMap(eitherToTaskFailure)
 
   private def aggregateFromStoredInfo(currentEventsOrNull: List[Event]) = {
     val currentEvents = Option(currentEventsOrNull).getOrElse(List.empty)
     currentEvents.foldRight(aggregateLoader.empty)((event, agg) => aggregateLoader.applyEvent(agg, event))
+  }
+
+  private def eitherToTaskFailure[Err <: Throwable, A](value: Err Either A): Task[A] = value match {
+    case Right(v) => Task.now(v)
+    case Left(err) => Task.raiseError(err)
   }
 }

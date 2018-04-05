@@ -20,16 +20,13 @@ class HttpAccountServiceSpec extends FlatSpec with Matchers {
 
   it should "return error on invalid input" in {
     val service = newHttpService
+    runRequest(service, requestBalance("account3")) should be((404, "Account could not be found"))
     runRequest(service, requestToRegisterAccount("account1", 100)) should be((200, """{"message":"Account registered"}"""))
     runRequest(service, requestToRegisterAccount("account1", 100)) should be((409, """Account has already been registered"""))
-    val creditErrorCheck = """Could not complete transfer: CreditFailed\(account3,50,AccountHasNotBeenRegistered,[a-f0-9-]*\)""".r
-    runRequest(service, requestToTransferAmount("account1", "account3", 50)) should matchPattern {
-      case (400, err: String) if creditErrorCheck.findFirstIn(err).isDefined =>
-    }
-    runRequest(service, requestToTransferAmount("account3", "account3", 50)) should be((400, """Could not complete transfer: DebitFailed(account3,50,AccountHasNotBeenRegistered)"""))
+    runRequest(service, requestToTransferAmount("account1", "account3", 50)) should be((500, "Could not complete transfer"))
+    runRequest(service, requestToTransferAmount("account3", "account3", 50)) should be((500, "Could not complete transfer"))
     runRequest(service, requestToTransferAmount("account1", "account1", -50)) should be((400, """Could not read request: Not a positive number"""))
-    runRequest(service, requestBalance("account3")) should be((404, """Account could not be found"""))
-    runRequest(service, requestToRegisterAccountInvalidJson("account1", 100)) should be((400, """Could not read request as Json: Malformed message body: Invalid JSON"""))
+    runRequest(service, requestToRegisterAccountInvalidJson("account1", 100)) should be((400, "Could not read request as Json: Malformed message body: Invalid JSON"))
     runRequest(service, requestToTransferAmountInvalidJson("account1", "account1", -50)) should be((400, """Could not read request as Json: Malformed message body: Invalid JSON"""))
   }
 

@@ -15,27 +15,27 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "fail to return balance" in {
-    UnregisteredAccount.currentBalance should be(Left(AccountReadError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.currentBalance should be(Left(AccountReadError.AccountHasNotBeenRegistered()))
   }
 
   it should "fail to debit" in {
-    UnregisteredAccount.debitForTransfer("toAcc", PositiveNumber(1).get) should be(Left(DebitError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.debitForTransfer("toAcc", PositiveNumber(1).get) should be(Left(DebitError.AccountHasNotBeenRegistered()))
   }
 
   it should "fail to credit" in {
-    UnregisteredAccount.creditForTransfer(UUID.randomUUID(), PositiveNumber(1).get) should be(Left(CreditError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.creditForTransfer(UUID.randomUUID(), PositiveNumber(1).get) should be(Left(CreditError.AccountHasNotBeenRegistered()))
   }
 
   it should "fail to complete transfer" in {
-    UnregisteredAccount.completeTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.completeTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered()))
   }
 
   it should "fail to revert failed transfer" in {
-    UnregisteredAccount.refundFailedTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered))
+    UnregisteredAccount.refundFailedTransfer(UUID.randomUUID()) should be(Left(CompleteTransferError.AccountHasNotBeenRegistered()))
   }
 
   "A registered account" should "not be allowed to register again" in {
-    accountWithBalance("id", 0).register("id2", 12) should be(Left(RegisterError.AccountHasAlreadyBeenRegistered))
+    accountWithBalance("id", 0).register("id2", 12) should be(Left(RegisterError.AccountHasAlreadyBeenRegistered()))
   }
 
   it should "return current account balance" in {
@@ -55,7 +55,7 @@ class AccountSpec extends FlatSpec with Matchers {
   }
 
   it should "fail to debit if insufficient funds" in {
-    accountWithBalance("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds))
+    accountWithBalance("id", 999).debitForTransfer("accTo", PositiveNumber(1000).get) should be(Left(DebitError.InsufficientFunds()))
   }
 
   it should "allow to be credited" in {
@@ -69,7 +69,7 @@ class AccountSpec extends FlatSpec with Matchers {
 
   it should "fail to complete transaction for unknown transaction id" in {
     val transactionId = UUID.randomUUID()
-    accountWithBalance("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    accountWithBalance("id", 999).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "allow to complete valid transaction once" in {
@@ -79,12 +79,12 @@ class AccountSpec extends FlatSpec with Matchers {
     val result = account2.completeTransfer(transactionId)
     result should be(Right(List(TransferCompleted(transactionId, "accTo", PositiveNumber(999).get))))
 
-    applyEvents(account2, result.getOrElse(List.empty)).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    applyEvents(account2, result.getOrElse(List.empty)).completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "fail to revert failed transaction for unknown transaction id" in {
     val transactionId = UUID.randomUUID()
-    accountWithBalance("id", 999).refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    accountWithBalance("id", 999).refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "allow to revert failed valid transaction" in {
@@ -107,7 +107,7 @@ class AccountSpec extends FlatSpec with Matchers {
       Debited(transactionId, PositiveNumber(999).get),
       TransferFailed(transactionId, "accTo", PositiveNumber(999).get)
     ))
-    account.refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    account.refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "fail to complete a reverted transaction" in {
@@ -117,7 +117,7 @@ class AccountSpec extends FlatSpec with Matchers {
       Debited(transactionId, PositiveNumber(999).get),
       TransferFailed(transactionId, "accTo", PositiveNumber(999).get)
     ))
-    account.completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    account.completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "fail to revert a completed transaction" in {
@@ -127,7 +127,7 @@ class AccountSpec extends FlatSpec with Matchers {
       Debited(transactionId, PositiveNumber(999).get),
       TransferCompleted(transactionId, "accTo", PositiveNumber(999).get)
     ))
-    account.refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    account.refundFailedTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "fail to complete a completed transaction" in {
@@ -137,7 +137,7 @@ class AccountSpec extends FlatSpec with Matchers {
       Debited(transactionId, PositiveNumber(999).get),
       TransferCompleted(transactionId, "accTo", PositiveNumber(999).get)
     ))
-    account.completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId))
+    account.completeTransfer(transactionId) should be(Left(CompleteTransferError.InvalidTransactionId()))
   }
 
   it should "throw when receiving registered event for a registered account" in {
