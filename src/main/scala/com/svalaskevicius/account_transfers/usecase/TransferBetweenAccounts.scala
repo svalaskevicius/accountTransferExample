@@ -2,13 +2,12 @@ package com.svalaskevicius.account_transfers.usecase
 
 import java.util.UUID
 
-import cats.Monad
-import cats.syntax.all._
 import com.svalaskevicius.account_transfers.model.Account.AccountId
 import com.svalaskevicius.account_transfers.model.AccountEvent.TransferStarted
 import com.svalaskevicius.account_transfers.model._
 import com.svalaskevicius.account_transfers.service.AccountService
 import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccountsError._
+import monix.eval.Task
 import org.log4s.getLogger
 
 sealed trait TransferBetweenAccountsError
@@ -31,9 +30,8 @@ object TransferBetweenAccountsError {
   * can be reconciled by reviewing the event history.
   *
   * @param accountService
-  * @tparam F             Wrapper type (see "Tagless Final" pattern). Examples could be a `Future`, `Task` or even `Id`
   */
-class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit fMonad: Monad[F]) {
+class TransferBetweenAccounts (accountService: AccountService) {
 
   private val logger = getLogger
 
@@ -54,29 +52,29 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
     * @param amount
     * @return
     */
-  def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): F[TransferBetweenAccountsError Either Unit] = {
+  def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[TransferBetweenAccountsError Either Unit] = {
 
     lazy val request = Request(accountFrom, accountTo, amount.value)
 
-    def completeTransaction(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
+    def completeTransaction(transactionId: UUID): Task[TransferBetweenAccountsError Either Unit] =
       accountService.completeTransfer(accountFrom, transactionId).map {
         case Left(err) => logAndReturnFailure(request, FailedToCompleteTransferAfterDebitAndCredit(accountFrom, accountTo, amount.value, transactionId, err))
         case Right(_) => Right(())
       }
 
-    def refundFailedTransfer(transactionId: UUID, creditError: CreditError): F[TransferBetweenAccountsError Either Unit] =
+    def refundFailedTransfer(transactionId: UUID, creditError: CreditError): Task[TransferBetweenAccountsError Either Unit] =
       accountService.refundFailedTransfer(accountFrom, transactionId).flatMap {
         case Left(err) => processFailed(request, FailedToRefundTransferAfterCreditFailure(accountFrom, accountTo, amount.value, transactionId, creditError, err))
         case Right(_) => processFailed(request, CreditFailed(accountTo, amount.value, creditError, transactionId))
       }
 
-    def creditForTransfer(transactionId: UUID): F[TransferBetweenAccountsError Either Unit] =
+    def creditForTransfer(transactionId: UUID): Task[TransferBetweenAccountsError Either Unit] =
       accountService.creditForTransfer(accountTo, transactionId, amount).flatMap {
         case Left(err) => refundFailedTransfer(transactionId, err)
         case Right(_) => completeTransaction(transactionId)
       }
 
-    def accountDebited(events: List[AccountEvent]): F[TransferBetweenAccountsError Either Unit] =
+    def accountDebited(events: List[AccountEvent]): Task[TransferBetweenAccountsError Either Unit] =
       findTransactionId(events) match {
         case None => processFailed(request, NoTransactionIdAfterTransferStart(accountFrom, accountTo, amount.value))
         case Some(transactionId) => creditForTransfer(transactionId)
@@ -93,8 +91,8 @@ class TransferBetweenAccounts[F[_]] (accountService: AccountService[F])(implicit
     Left(err)
   }
 
-  private def processFailed(request: Request, err: TransferBetweenAccountsError): F[TransferBetweenAccountsError Either Unit] =
-    fMonad.pure(logAndReturnFailure(request, err))
+  private def processFailed(request: Request, err: TransferBetweenAccountsError): Task[TransferBetweenAccountsError Either Unit] =
+    Task.now(logAndReturnFailure(request, err))
 
   private def findTransactionId(events: List[AccountEvent]) = events.collectFirst {
     case TransferStarted(id, _, _) => id

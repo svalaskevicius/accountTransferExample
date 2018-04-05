@@ -2,8 +2,8 @@ package com.svalaskevicius.account_transfers.service
 
 import java.util.concurrent.ConcurrentHashMap
 
-import cats.Id
 import com.svalaskevicius.account_transfers.model.{AggregateLoader, EventStorage}
+import monix.eval.Task
 
 /**
   * `ConcurrentHashMap` backed `EventStorage` implementation.
@@ -12,7 +12,7 @@ import com.svalaskevicius.account_transfers.model.{AggregateLoader, EventStorage
   * @tparam Aggregate      Aggregate type
   * @tparam Event          Event type that is compatible with the Aggregate
   */
-class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoader[Aggregate, Event]) extends EventStorage[Id, Aggregate, Event] {
+class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoader[Aggregate, Event]) extends EventStorage[Aggregate, Event] {
 
   private val storage = new ConcurrentHashMap[String, List[Event]]()
 
@@ -22,7 +22,9 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @param aggregateId
     * @return
     */
-  def readAggregate(aggregateId: String): Aggregate = aggregateFromStoredInfo(storage.get(aggregateId))
+  def readAggregate(aggregateId: String): Task[Aggregate] = Task {
+    aggregateFromStoredInfo(storage.get(aggregateId))
+  }
 
   /**
     * Run a transaction for a given aggregate, store the changes, and return their result
@@ -32,7 +34,7 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @tparam Err
     * @return
     */
-  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Err Either List[Event] = {
+  def runTransaction[Err](aggregateId: String)(f: Aggregate => Err Either List[Event]): Task[Err Either List[Event]] = Task {
     var returnValue: Either[Err, List[Event]] = Right(List.empty)
     storage.compute(aggregateId, (_, currentEventsOrNull) => {
       f(aggregateFromStoredInfo(currentEventsOrNull)) match {

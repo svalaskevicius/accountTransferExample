@@ -54,14 +54,6 @@ EventSourcing makes logging events as the first class citizen of the application
 the stored events drive the state change - thus, the logged data becomes the primary
 source of truth.
 
-### Why Tagless Final?
-
-Abstracts our context type (e.g. Scala `Future`, Scalaz or Monix `Task`, or even identity)
-into a type parameter, so the logic doesn't depend on it (and can be used with any provided
-backend).
-
-More info: https://softwaremill.com/free-monad-or-tagless-final-pres/
-
 ### Why the 3rd step to complete transaction?
 
 You'll notice that after the target account has been credited, the source account 

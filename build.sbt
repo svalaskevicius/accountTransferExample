@@ -12,11 +12,9 @@ lazy val `account-transfers` =
         "org.http4s"      %% "http4s-dsl"          % http4sVersion,
         "io.circe" %% "circe-generic" % "0.9.1",
         "ch.qos.logback" % "logback-classic" % "1.2.3",
+        "io.monix" %% "monix" % "3.0.0-RC1",
         "org.scalacheck" %% "scalacheck" % "1.13.4" % Test,
         "org.scalatest" %% "scalatest" % "3.0.5" % Test
-      ),
-      dependencyOverrides ++= Seq(
-        "org.typelevel" %% "cats-core" % "1.1.0",
       )
     )
 

@@ -1,10 +1,12 @@
 package com.svalaskevicius.account_transfers.http
 
-import cats.effect.IO
 import com.svalaskevicius.account_transfers.model.Account
 import com.svalaskevicius.account_transfers.service.{AccountService, InMemoryEventStorage}
+import monix.eval.Task
 import org.http4s.{HttpService, Method, Request, Uri}
 import org.scalatest.{FlatSpec, Matchers}
+
+import scala.concurrent.duration.Duration
 
 class HttpAccountServiceSpec extends FlatSpec with Matchers {
   "Http server" should "allow transfer between accounts" in {
@@ -31,31 +33,31 @@ class HttpAccountServiceSpec extends FlatSpec with Matchers {
     runRequest(service, requestToTransferAmountInvalidJson("account1", "account1", -50)) should be((400, """Could not read transfer money request as Json: Malformed message body: Invalid JSON"""))
   }
 
-  private def requestToRegisterAccount(id: String, balance: Long) = Request[IO](
+  private def requestToRegisterAccount(id: String, balance: Long) = Request[Task](
     Method.POST,
     Uri.fromString(s"/$id/register").toOption.get,
     body = fs2.Stream.emits(s"""{"initialBalance": $balance}""".getBytes)
   )
 
-  private def requestToRegisterAccountInvalidJson(id: String, balance: Long) = Request[IO](
+  private def requestToRegisterAccountInvalidJson(id: String, balance: Long) = Request[Task](
     Method.POST,
     Uri.fromString(s"/$id/register").toOption.get,
     body = fs2.Stream.emits(s"""{nce}""".getBytes)
   )
 
-  private def requestToTransferAmount(id1: String, id2: String, balance: Long) = Request[IO](
+  private def requestToTransferAmount(id1: String, id2: String, balance: Long) = Request[Task](
     Method.POST,
     Uri.fromString(s"/$id1/transfer").toOption.get,
     body = fs2.Stream.emits(s"""{"accountTo": "$id2", "amount": $balance}""".getBytes)
   )
 
-  private def requestToTransferAmountInvalidJson(id1: String, id2: String, balance: Long) = Request[IO](
+  private def requestToTransferAmountInvalidJson(id1: String, id2: String, balance: Long) = Request[Task](
     Method.POST,
     Uri.fromString(s"/$id1/transfer").toOption.get,
     body = fs2.Stream.emits(s"""",,,""".getBytes)
   )
 
-  private def requestBalance(id: String) = Request[IO](
+  private def requestBalance(id: String) = Request[Task](
     Method.GET,
     Uri.fromString(s"/$id/balance").toOption.get
   )
@@ -66,8 +68,9 @@ class HttpAccountServiceSpec extends FlatSpec with Matchers {
     new HttpAccountService(accountService).service
   }
 
-  private def runRequest(service: HttpService[IO], req: Request[IO]) = {
-    val ret = service(req).value.unsafeRunSync().get
-    (ret.status.code, new String(ret.body.compile.toList.unsafeRunSync().toArray))
+  private def runRequest(service: HttpService[Task], req: Request[Task]) = {
+    import monix.execution.Scheduler.Implicits.global
+    val ret = service(req).value.runSyncUnsafe(Duration.Inf).get
+    (ret.status.code, new String(ret.body.compile.toList.runSyncUnsafe(Duration.Inf).toArray))
   }
 }
