@@ -3,7 +3,7 @@
 ### Prerequisites 
 
  - JDK - Recommended Version 8, tested with 1.8.0_152
- - SBT (>= 1.0.0)
+ - SBT - version >= 1.0.0 (project uses 1.1.1)
 
 ## Usage instructions
 
