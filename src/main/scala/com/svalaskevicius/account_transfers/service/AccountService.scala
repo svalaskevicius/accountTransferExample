@@ -16,7 +16,7 @@ import monix.eval.Task
 class AccountService (storage: EventStorage[Account, AccountEvent]) {
 
   def currentBalance(accountId: AccountId): Task[AccountReadError Either Long] =
-    storage.readAggregate(accountId).map(_.currentBalance)
+    storage.readOperation(accountId)(_.currentBalance)
 
   def register(accountId: AccountId, initialBalance: Long): Task[RegisterError Either List[AccountEvent]] =
     storage.runTransaction(accountId)(_.register(accountId, initialBalance))

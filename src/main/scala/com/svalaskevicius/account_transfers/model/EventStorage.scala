@@ -43,9 +43,12 @@ trait EventStorage[Aggregate, Event] {
     * Load the latest version of an aggregate (non transactionally).
     *
     * @param aggregateId
+    * @param f           a function to apply on loaded Aggregate
+    * @tparam Err        error type that `f` returns
+    * @tparam A          result type of `f`
     * @return            the aggregate state with all events applied
     */
-  def readAggregate(aggregateId: String): Task[Aggregate]
+  def readOperation[Err, A](aggregateId: String)(f: Aggregate => Err Either A): Task[Err Either A]
 
   /**
     * Run a transaction for a given aggregate, store the changes (events) on success, and return their result.

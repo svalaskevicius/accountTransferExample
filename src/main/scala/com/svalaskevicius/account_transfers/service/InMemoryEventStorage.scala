@@ -22,8 +22,8 @@ class InMemoryEventStorage[Aggregate, Event] (val aggregateLoader: AggregateLoad
     * @param aggregateId
     * @return
     */
-  def readAggregate(aggregateId: String): Task[Aggregate] = Task {
-    aggregateFromStoredInfo(storage.get(aggregateId))
+  def readOperation[Err, A](aggregateId: String)(f: Aggregate => Err Either A): Task[Err Either A] = Task {
+    f(aggregateFromStoredInfo(storage.get(aggregateId)))
   }
 
   /**
