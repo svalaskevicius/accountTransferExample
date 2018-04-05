@@ -5,7 +5,7 @@ import com.svalaskevicius.account_transfers.service.AccountService
 import com.svalaskevicius.account_transfers.usecase.TransferBetweenAccounts
 import io.circe.{Decoder, Json}
 import org.http4s.circe._
-import org.http4s.{HttpService, Request}
+import org.http4s.{HttpService, Request, Response}
 import org.http4s.dsl.Http4sDsl
 import io.circe.generic.semiauto._
 import monix.eval.Task
@@ -40,14 +40,11 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
   }
 
   private def registerAccount(accountId: String, req: Request[Task]) =
-    req.attemptAs[Json].map(_.as[RegisterAccountRequest]).value.flatMap {
-      case Right(Right(RegisterAccountRequest(initialBalance))) =>
-        accountService.register(accountId, initialBalance).flatMap {
-          case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Account registered")))
-          case Left(RegisterError.AccountHasAlreadyBeenRegistered) => Conflict("Account has already been registered")
-        }
-      case Right(Left(decodeFailure)) => BadRequest(s"Could not read register request: ${decodeFailure.message}")
-      case Left(decodeFailure) => BadRequest(s"Could not read register request as Json: ${decodeFailure.message}")
+    withJsonRequestAs[RegisterAccountRequest](req) { requestData =>
+      accountService.register(accountId, requestData.initialBalance).flatMap {
+        case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Account registered")))
+        case Left(RegisterError.AccountHasAlreadyBeenRegistered) => Conflict("Account has already been registered")
+      }
     }
 
   private def retrieveAccountBalance(accountId: String) =
@@ -57,13 +54,17 @@ class HttpAccountService(accountService: AccountService) extends Http4sDsl[Task]
     }
 
   private def transferMoney(accountId: String, req: Request[Task]) =
-    req.attemptAs[Json].map(_.as[TransferAmountRequest]).value.flatMap {
-      case Right(Right(TransferAmountRequest(accountTo, amount))) =>
-        transferBetweenAccounts(accountId, accountTo, amount).flatMap {
-          case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Transfer completed")))
-          case Left(error) => BadRequest(s"Could not complete transfer: $error")
-        }
-      case Right(Left(decodeFailure)) => BadRequest(s"Could not read transfer money request: ${decodeFailure.message}")
-      case Left(decodeFailure) => BadRequest(s"Could not read transfer money request as Json: ${decodeFailure.message}")
+    withJsonRequestAs[TransferAmountRequest](req) { requestData =>
+      transferBetweenAccounts(accountId, requestData.accountTo, requestData.amount).flatMap {
+        case Right(_) => Ok(Json.obj("message" -> Json.fromString(s"Transfer completed")))
+        case Left(error) => BadRequest(s"Could not complete transfer: $error")
+      }
+    }
+
+  private def withJsonRequestAs[A: Decoder](req: Request[Task])(f: A => Task[Response[Task]]): Task[Response[Task]] =
+    req.attemptAs[Json].map(_.as[A]).value.flatMap {
+      case Right(Right(requestData)) => f(requestData)
+      case Right(Left(decodeFailure)) => BadRequest(s"Could not read request: ${decodeFailure.message}")
+      case Left(decodeFailure) => BadRequest(s"Could not read request as Json: ${decodeFailure.message}")
     }
 }
