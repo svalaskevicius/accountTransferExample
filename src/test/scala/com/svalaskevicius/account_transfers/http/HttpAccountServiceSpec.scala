@@ -6,7 +6,7 @@ import monix.eval.Task
 import org.http4s.{HttpService, Method, Request, Uri}
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.duration.Duration
+import com.svalaskevicius.account_transfers.TestUtils._
 
 class HttpAccountServiceSpec extends FlatSpec with Matchers {
   "Http server" should "allow transfer between accounts" in {
@@ -69,8 +69,7 @@ class HttpAccountServiceSpec extends FlatSpec with Matchers {
   }
 
   private def runRequest(service: HttpService[Task], req: Request[Task]) = {
-    import monix.execution.Scheduler.Implicits.global
-    val ret = service(req).value.runSyncUnsafe(Duration.Inf).get
-    (ret.status.code, new String(ret.body.compile.toList.runSyncUnsafe(Duration.Inf).toArray))
+    val ret = runTask(service(req).value).get
+    (ret.status.code, new String(runTask(ret.body.compile.toList).toArray))
   }
 }
