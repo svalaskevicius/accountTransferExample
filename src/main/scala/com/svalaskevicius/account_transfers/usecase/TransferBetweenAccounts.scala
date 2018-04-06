@@ -48,8 +48,6 @@ class TransferBetweenAccounts (accountService: AccountService) {
     */
   def apply(accountFrom: AccountId, accountTo: AccountId, amount: PositiveNumber): Task[Unit] = {
 
-    lazy val request = Request(accountFrom, accountTo, amount.value)
-
     def findTransactionId(events: List[AccountEvent]) = Task {
       events.collectFirst {
         case TransferStarted(id, _, _) => id
